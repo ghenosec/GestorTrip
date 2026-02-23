@@ -92,4 +92,3 @@ src/
     - [ ] Login
     - [ ] Sincronização de dados
     - [ ] Pwa (talvez)
-    - [ ] 
