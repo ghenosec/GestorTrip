@@ -1,11 +1,13 @@
 "use client"
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plane, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react"
+import { Earth, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function PrimeiroAcessoPage() {
   const router = useRouter()
@@ -59,12 +61,14 @@ export default function PrimeiroAcessoPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="w-full max-w-sm">
+    <div className="relative flex min-h-screen items-center justify-center bg-background px-4">
+      {/* Botão de tema no canto */}
+      <ThemeToggle variant="page" />
 
+      <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <Plane className="h-6 w-6" />
+            <Earth className="h-6 w-6" />
           </div>
           <div className="text-center">
             <h1 className="text-xl font-semibold text-foreground">GestorTrip</h1>
@@ -84,7 +88,6 @@ export default function PrimeiroAcessoPage() {
           </CardHeader>
           <CardContent className="px-6 pb-6">
             <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="email" className="text-xs font-medium">E-mail</Label>
                 <Input id="email" type="email" placeholder="seu@email.com"
