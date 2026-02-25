@@ -14,6 +14,9 @@ declare global {
         user?: { id: number; email: string }
       }>
 
+      getTheme: () => Promise<"dark" | "light">
+      setTheme: (theme: "dark" | "light" | "system") => Promise<void>
+
       getViagens: (userId: number) => Promise<Record<string, unknown>[]>
       createViagem: (userId: number, data: Record<string, unknown>) => Promise<{ success: boolean; id?: number }>
       updateViagem: (id: number, userId: number, data: Record<string, unknown>) => Promise<{ success: boolean }>

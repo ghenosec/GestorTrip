@@ -5,6 +5,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   register:      (email, pass)    => ipcRenderer.invoke("auth:register", email, pass),
   login:         (email, pass)    => ipcRenderer.invoke("auth:login", email, pass),
 
+  getTheme: ()      => ipcRenderer.invoke("theme:get"),
+  setTheme: (theme) => ipcRenderer.invoke("theme:set", theme),
+
   getViagens:    (userId)         => ipcRenderer.invoke("viagens:get", userId),
   createViagem:  (userId, data)   => ipcRenderer.invoke("viagens:create", userId, data),
   updateViagem:  (id, userId, data) => ipcRenderer.invoke("viagens:update", id, userId, data),

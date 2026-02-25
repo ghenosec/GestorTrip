@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require("electron")
+const { app, BrowserWindow, ipcMain, nativeTheme } = require("electron")
 const path = require("path")
 
 let db
@@ -11,7 +11,7 @@ function createWindow(htmlFile) {
     minWidth: 900,
     minHeight: 600,
     title: "GestorTrip",
-    icon: path.join(__dirname, "./build/icon.ico"),
+    icon: path.join(__dirname, "../public/favicon.ico"),
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration: false,
@@ -32,8 +32,8 @@ function createWindow(htmlFile) {
     event.preventDefault()
 
     const outDir = path.join(__dirname, "../out")
-
     const outDirNorm = outDir.replace(/\\/g, "/")
+
     let filePath = targetUrl
       .replace(/\\/g, "/")
       .replace(/^file:\/\/\/?/, "")
@@ -55,6 +55,13 @@ function createWindow(htmlFile) {
 app.whenReady().then(() => {
   db = require("./database")
 
+  ipcMain.handle("theme:get", () => nativeTheme.shouldUseDarkColors ? "dark" : "light")
+  ipcMain.handle("theme:set", (_, theme) => {
+    if (theme === "dark") nativeTheme.themeSource = "dark"
+    else if (theme === "light") nativeTheme.themeSource = "light"
+    else nativeTheme.themeSource = "system"
+  })
+
   ipcMain.handle("auth:isFirstAccess", () => db.isFirstAccess())
   ipcMain.handle("auth:register", (_, email, pass) => db.registerUser(email, pass))
   ipcMain.handle("auth:login",    (_, email, pass) => db.loginUser(email, pass))
@@ -75,10 +82,7 @@ app.whenReady().then(() => {
   ipcMain.handle("pagamentos:delete", (_, id, userId)       => db.deletePagamento(id, userId))
 
   const firstAccess = db.isFirstAccess()
-  const startFile = firstAccess
-    ? "primeiro-acesso/index.html"
-    : "login/index.html"
-
+  const startFile = firstAccess ? "primeiro-acesso/index.html" : "login/index.html"
   createWindow(startFile)
 })
 
