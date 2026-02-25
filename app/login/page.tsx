@@ -1,21 +1,40 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Earth, Eye, EyeOff, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function LoginPage() {
   const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail]               = useState("")
+  const [password, setPassword]         = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [keepLogged, setKeepLogged]     = useState(false)
+  const [error, setError]               = useState("")
+  const [loading, setLoading]           = useState(true)
+
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        if (typeof window.electronAPI?.loadSession !== "undefined") {
+          const saved = await window.electronAPI.loadSession()
+          if (saved) {
+            sessionStorage.setItem("user", JSON.stringify(saved))
+            router.replace("/")
+            return
+          }
+        }
+      } catch {}
+      setLoading(false)
+    }
+    checkSession()
+  }, [router])
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
@@ -35,6 +54,11 @@ export default function LoginPage() {
       const result = await window.electronAPI.login(email, password)
       if (result.success && result.user) {
         sessionStorage.setItem("user", JSON.stringify(result.user))
+
+        if (keepLogged) {
+          await window.electronAPI.saveSession(result.user)
+        }
+
         router.replace("/")
       } else {
         setError(result.error ?? "Erro ao fazer login.")
@@ -46,9 +70,16 @@ export default function LoginPage() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
+  }
+
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-background px-4">
-      {/* Botão de tema no canto */}
       <ThemeToggle variant="page" />
 
       <div className="w-full max-w-sm">
@@ -88,6 +119,18 @@ export default function LoginPage() {
                     {showPassword ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
                   </button>
                 </div>
+              </div>
+
+              {/* Manter conectado */}
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="keepLogged"
+                  checked={keepLogged}
+                  onCheckedChange={(v) => setKeepLogged(v === true)}
+                />
+                <Label htmlFor="keepLogged" className="text-xs text-muted-foreground cursor-pointer">
+                  Manter conectado
+                </Label>
               </div>
 
               {error && (
