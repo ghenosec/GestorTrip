@@ -6,7 +6,7 @@ Sistema web para **gerenciamento de viagens**, desenvolvido com **Next.js + Type
 
 ## 📌 Sobre o Projeto
 
-O **GestorTrip** é uma aplicação web que permite gerenciar viagens de forma organizada e intuitiva.  
+O **GestorTrip** é uma aplicação que permite gerenciar viagens de forma organizada e intuitiva.  
 O projeto foi desenvolvido utilizando tecnologias modernas do ecossistema React, com foco em:
 
 - ⚡ Performance
@@ -88,7 +88,7 @@ src/
  ```
 
  ### O projeto não está finalizado, até o momento somente o MVP está feito. Para o futuro:
-    - [ ] Criar banco
-    - [ ] Login
-    - [ ] Sincronização de dados
-    - [ ] Pwa (talvez)
+    - [x] Criar banco
+    - [x] Login
+    - [x] Sincronização de dados
+    - [x] No começo a ideia era ser um PWA, mas foi mudado para um .exe usando electron.
