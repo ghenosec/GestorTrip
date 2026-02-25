@@ -328,7 +328,7 @@ export function Viagens() {
                 <Input
                   id="vvolta"
                   type="date"
-                  max="9999-12-31"
+                  min={form.dataIda || undefined}
                   value={form.dataVolta}
                   onChange={(e) => updateForm("dataVolta", e.target.value)}
                   className={errors.dataVolta ? "border-destructive" : ""}
