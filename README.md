@@ -1,18 +1,19 @@
 # ✈ GestorTrip
 
-Sistema web para **gerenciamento de viagens**, desenvolvido com **Next.js + TypeScript**, focado em organização, visualização de dados e experiência moderna de usuário.
+Sistema para **gerenciamento de viagens**, desenvolvido com **Next.js + TypeScript**, focado em organização, visualização de dados e experiência moderna de usuário.
 
 ---
 
 ## 📌 Sobre o Projeto
 
-O **GestorTrip** é uma aplicação web que permite gerenciar viagens de forma organizada e intuitiva.  
+O **GestorTrip** é uma aplicação que permite gerenciar viagens de forma organizada e intuitiva.  
 O projeto foi desenvolvido utilizando tecnologias modernas do ecossistema React, com foco em:
 
 - ⚡ Performance
 - 🎨 Interface moderna e responsiva
 - 🔒 Tipagem forte com TypeScript
 - 🧩 Componentização reutilizável
+- 🌐 Acesso Online e Offline
 
 ---
 
@@ -29,6 +30,9 @@ O projeto foi desenvolvido utilizando tecnologias modernas do ecossistema React,
 - **next-themes**
 - **date-fns**
 - **clsx**
+- **SQLite**
+- **electron**
+
 
 ---
 
@@ -51,12 +55,27 @@ npm install
 
 ## ▶️ Rodando o projeto
 
-Ambiente de desenvolvimento
+Ambiente de desenvolvimento web
 
 ```bash
 npm run dev
 ```
 Acesse: http://localhost:3000
+
+
+## 🔼 Buildar
+
+```
+npm run build
+npx electron .
+```
+
+## ⏩ Gerar Executável
+
+```
+npm run electron:build
+```
+
 
 ---
 
@@ -81,14 +100,21 @@ Acesse: http://localhost:3000
 ```bash
 src/
  ├── app/
+ ├── app/login/
+ ├── app/primeiro-acesso/
+ ├── build/
  ├── components/
+ ├── components/ui
+ ├── electron/
  ├── hooks/
  ├── lib/
+ ├── public/
+ ├── scripts/
  ├── styles/
  ```
 
  ### O projeto não está finalizado, até o momento somente o MVP está feito. Para o futuro:
-    - [ ] Criar banco
-    - [ ] Login
-    - [ ] Sincronização de dados
-    - [ ] Pwa (talvez)
+    - [x] Criar banco
+    - [x] Login
+    - [x] Sincronização de dados
+    - [x] No começo a ideia era ser um PWA, mas foi mudado para um .exe usando electron.
