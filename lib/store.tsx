@@ -1,121 +1,385 @@
 "use client"
 
-import React, { createContext, useContext, useState, useCallback, useMemo } from "react"
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+  useEffect,
+} from "react"
 import type { Cliente, Viagem, Pagamento, PagamentoHistorico } from "./data"
-import {
-  clientesIniciais,
-  viagensIniciais,
-  pagamentosIniciais,
-  generateId,
-  getValorPago,
-} from "./data"
+import { generateId, getValorPago } from "./data"
 
 interface StoreContextType {
   clientes: Cliente[]
   viagens: Viagem[]
   pagamentos: Pagamento[]
+  loading: boolean
 
   activeSection: string
   setActiveSection: (section: string) => void
 
-  addCliente: (cliente: Omit<Cliente, "id">) => void
-  updateCliente: (id: string, cliente: Partial<Cliente>) => void
-  deleteCliente: (id: string) => void
+  addCliente: (cliente: Omit<Cliente, "id">) => Promise<void>
+  updateCliente: (id: string, cliente: Partial<Cliente>) => Promise<void>
+  deleteCliente: (id: string) => Promise<void>
 
-  addViagem: (viagem: Omit<Viagem, "id">) => void
-  updateViagem: (id: string, viagem: Partial<Viagem>) => void
-  deleteViagem: (id: string) => void
+  addViagem: (viagem: Omit<Viagem, "id">) => Promise<void>
+  updateViagem: (id: string, viagem: Partial<Viagem>) => Promise<void>
+  deleteViagem: (id: string) => Promise<void>
 
-  addPagamento: (pagamento: Omit<Pagamento, "id">) => void
-  addPagamentoHistorico: (pagamentoId: string, historico: Omit<PagamentoHistorico, "id">) => void
+  addPagamento: (pagamento: Omit<Pagamento, "id" | "historico">) => Promise<void>
+  addPagamentoHistorico: (
+    pagamentoId: string,
+    historico: Omit<PagamentoHistorico, "id">
+  ) => Promise<void>
 
   getClientesByViagem: (viagemId: string) => Cliente[]
   getPagamentoByCliente: (clienteId: string) => Pagamento | undefined
   getViagemById: (viagemId: string) => Viagem | undefined
   getClienteById: (clienteId: string) => Cliente | undefined
+
+  reloadAll: () => Promise<void>
+}
+
+
+function getUserId(): number {
+  if (typeof window === "undefined") return 0
+  try {
+    const raw = sessionStorage.getItem("user")
+    return raw ? JSON.parse(raw).id : 0
+  } catch { return 0 }
+}
+
+function hasElectron(): boolean {
+  return typeof window !== "undefined" && typeof window.electronAPI !== "undefined"
+}
+
+function rowToCliente(row: Record<string, unknown>): Cliente {
+  return {
+    id: String(row.id),
+    nomeCompleto: String(row.nome_completo ?? ""),
+    cpf: String(row.cpf ?? ""),
+    rg: String(row.rg ?? ""),
+    dataNascimento: String(row.data_nascimento ?? ""),
+    telefone: String(row.telefone ?? ""),
+    email: String(row.email ?? ""),
+    endereco: String(row.endereco ?? ""),
+    observacoes: String(row.observacoes ?? ""),
+    viagemId: row.viagem_id ? String(row.viagem_id) : null,
+    status: (row.status as "pago" | "pendente") ?? "pendente",
+  }
+}
+
+function rowToViagem(row: Record<string, unknown>): Viagem {
+  return {
+    id: String(row.id),
+    nome: String(row.nome ?? ""),
+    destino: String(row.destino ?? ""),
+    dataIda: String(row.data_ida ?? ""),
+    dataVolta: String(row.data_volta ?? ""),
+    valorPorPessoa: Number(row.valor_por_pessoa ?? 0),
+    status: (row.status as "ativa" | "finalizada") ?? "ativa",
+  }
+}
+
+function rowToPagamento(
+  row: Record<string, unknown>,
+  historico: PagamentoHistorico[]
+): Pagamento {
+  return {
+    id: String(row.id),
+    clienteId: String(row.cliente_id ?? ""),
+    viagemId: String(row.viagem_id ?? ""),
+    valorTotal: Number(row.valor_total ?? 0),
+    historico,
+  }
+}
+
+function rowToHistorico(row: Record<string, unknown>): PagamentoHistorico {
+  return {
+    id: String(row.id),
+    valor: Number(row.valor ?? 0),
+    formaPagamento: (row.forma_pagamento as PagamentoHistorico["formaPagamento"]) ?? "pix",
+    data: String(row.data ?? ""),
+    observacao: row.observacao ? String(row.observacao) : undefined,
+  }
 }
 
 const StoreContext = createContext<StoreContextType | null>(null)
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [clientes, setClientes] = useState<Cliente[]>(clientesIniciais)
-  const [viagens, setViagens] = useState<Viagem[]>(viagensIniciais)
-  const [pagamentos, setPagamentos] = useState<Pagamento[]>(pagamentosIniciais)
+  const [clientes, setClientes] = useState<Cliente[]>([])
+  const [viagens, setViagens] = useState<Viagem[]>([])
+  const [pagamentos, setPagamentos] = useState<Pagamento[]>([])
+  const [loading, setLoading] = useState(true)
   const [activeSection, setActiveSection] = useState("dashboard")
 
-  const addCliente = useCallback((data: Omit<Cliente, "id">) => {
-    const newCliente: Cliente = { ...data, id: generateId() }
-    setClientes((prev) => [...prev, newCliente])
+  const reloadAll = useCallback(async () => {
+    const userId = getUserId()
 
-    if (data.viagemId) {
-      const viagem = viagensIniciais.find((v) => v.id === data.viagemId)
-      if (viagem) {
-        setPagamentos((prev) => [
-          ...prev,
-          {
-            id: generateId(),
-            clienteId: newCliente.id,
-            viagemId: data.viagemId!,
-            valorTotal: viagem.valorPorPessoa,
-            historico: [],
-          },
-        ])
-      }
+    if (!hasElectron()) {
+      console.warn("[Store] electronAPI não encontrado. Rodando com dados vazios.")
+      setClientes([])
+      setViagens([])
+      setPagamentos([])
+      setLoading(false)
+      return
+    }
+
+    try {
+      const [rawViagens, rawClientes, rawPagamentos] = await Promise.all([
+        window.electronAPI.getViagens(userId),
+        window.electronAPI.getClientes(userId),
+        window.electronAPI.getPagamentos(userId),
+      ])
+
+      setViagens((rawViagens ?? []).map(rowToViagem))
+      setClientes((rawClientes ?? []).map(rowToCliente))
+
+      const pagamentosComHistorico: Pagamento[] = (rawPagamentos ?? []).map(
+        (row: Record<string, unknown>) => {
+          let historico: PagamentoHistorico[] = []
+          try {
+            const raw = row.historico
+            if (typeof raw === "string" && raw) {
+              historico = JSON.parse(raw).map(rowToHistorico)
+            } else if (Array.isArray(raw)) {
+              historico = raw.map(rowToHistorico)
+            }
+          } catch { historico = [] }
+          return rowToPagamento(row, historico)
+        }
+      )
+      setPagamentos(pagamentosComHistorico)
+    } catch (err) {
+      console.error("[Store] Erro ao carregar dados:", err)
+    } finally {
+      setLoading(false)
     }
   }, [])
 
-  const updateCliente = useCallback((id: string, data: Partial<Cliente>) => {
-    setClientes((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c)))
-  }, [])
+  useEffect(() => {
+    reloadAll()
+  }, [reloadAll])
 
-  const deleteCliente = useCallback((id: string) => {
-    setClientes((prev) => prev.filter((c) => c.id !== id))
-    setPagamentos((prev) => prev.filter((p) => p.clienteId !== id))
-  }, [])
+  const addCliente = useCallback(async (data: Omit<Cliente, "id">) => {
+    const userId = getUserId()
 
-  const addViagem = useCallback((data: Omit<Viagem, "id">) => {
-    const newViagem: Viagem = { ...data, id: generateId() }
-    setViagens((prev) => [...prev, newViagem])
-  }, [])
+    if (!hasElectron()) {
+      const novo: Cliente = { ...data, id: generateId() }
+      setClientes((prev) => [...prev, novo])
+      if (data.viagemId) {
+        const viagem = viagens.find((v) => v.id === data.viagemId)
+        if (viagem) {
+          setPagamentos((prev) => [
+            ...prev,
+            { id: generateId(), clienteId: novo.id, viagemId: data.viagemId!, valorTotal: viagem.valorPorPessoa, historico: [] },
+          ])
+        }
+      }
+      return
+    }
 
-  const updateViagem = useCallback((id: string, data: Partial<Viagem>) => {
-    setViagens((prev) => prev.map((v) => (v.id === id ? { ...v, ...data } : v)))
-  }, [])
+    await window.electronAPI.createCliente(userId, {
+      nome_completo: data.nomeCompleto,
+      cpf: data.cpf,
+      rg: data.rg,
+      data_nascimento: data.dataNascimento,
+      telefone: data.telefone,
+      email: data.email,
+      endereco: data.endereco,
+      observacoes: data.observacoes,
+      viagem_id: data.viagemId ? Number(data.viagemId) : null,
+      status: data.status,
+    })
 
-  const deleteViagem = useCallback((id: string) => {
-    setViagens((prev) => prev.filter((v) => v.id !== id))
-    setClientes((prev) => prev.map((c) => (c.viagemId === id ? { ...c, viagemId: null } : c)))
-    setPagamentos((prev) => prev.filter((p) => p.viagemId !== id))
-  }, [])
+    if (data.viagemId) {
+      const viagem = viagens.find((v) => v.id === data.viagemId)
+      if (viagem) {
+        const rawClientes = await window.electronAPI.getClientes(userId)
+        const novoCliente = rawClientes
+          .map(rowToCliente)
+          .find((c: Cliente) => c.cpf === data.cpf)
 
-  const addPagamento = useCallback((data: Omit<Pagamento, "id">) => {
-    setPagamentos((prev) => [...prev, { ...data, id: generateId() }])
-  }, [])
+        if (novoCliente) {
+          await window.electronAPI.createPagamento(userId, {
+            cliente_id: Number(novoCliente.id),
+            viagem_id: Number(data.viagemId),
+            valor_total: viagem.valorPorPessoa,
+            historico: "[]",
+          })
+        }
+      }
+    }
+
+    await reloadAll()
+  }, [viagens, reloadAll])
+
+  const updateCliente = useCallback(async (id: string, data: Partial<Cliente>) => {
+    const userId = getUserId()
+
+    if (!hasElectron()) {
+      setClientes((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c)))
+      return
+    }
+
+    const atual = clientes.find((c) => c.id === id)
+    if (!atual) return
+
+    const merged = { ...atual, ...data }
+    await window.electronAPI.updateCliente(Number(id), userId, {
+      nome_completo: merged.nomeCompleto,
+      cpf: merged.cpf,
+      rg: merged.rg,
+      data_nascimento: merged.dataNascimento,
+      telefone: merged.telefone,
+      email: merged.email,
+      endereco: merged.endereco,
+      observacoes: merged.observacoes,
+      viagem_id: merged.viagemId ? Number(merged.viagemId) : null,
+      status: merged.status,
+    })
+    await reloadAll()
+  }, [clientes, reloadAll])
+
+  const deleteCliente = useCallback(async (id: string) => {
+    const userId = getUserId()
+
+    if (!hasElectron()) {
+      setClientes((prev) => prev.filter((c) => c.id !== id))
+      setPagamentos((prev) => prev.filter((p) => p.clienteId !== id))
+      return
+    }
+
+    await window.electronAPI.deleteCliente(Number(id), userId)
+    await reloadAll()
+  }, [reloadAll])
+
+  const addViagem = useCallback(async (data: Omit<Viagem, "id">) => {
+    const userId = getUserId()
+
+    if (!hasElectron()) {
+      setViagens((prev) => [...prev, { ...data, id: generateId() }])
+      return
+    }
+
+    await window.electronAPI.createViagem(userId, {
+      nome: data.nome,
+      destino: data.destino,
+      data_ida: data.dataIda,
+      data_volta: data.dataVolta,
+      valor_por_pessoa: data.valorPorPessoa,
+      status: data.status,
+    })
+    await reloadAll()
+  }, [reloadAll])
+
+  const updateViagem = useCallback(async (id: string, data: Partial<Viagem>) => {
+    const userId = getUserId()
+
+    if (!hasElectron()) {
+      setViagens((prev) => prev.map((v) => (v.id === id ? { ...v, ...data } : v)))
+      return
+    }
+
+    const atual = viagens.find((v) => v.id === id)
+    if (!atual) return
+
+    const merged = { ...atual, ...data }
+    await window.electronAPI.updateViagem(Number(id), userId, {
+      nome: merged.nome,
+      destino: merged.destino,
+      data_ida: merged.dataIda,
+      data_volta: merged.dataVolta,
+      valor_por_pessoa: merged.valorPorPessoa,
+      status: merged.status,
+    })
+    await reloadAll()
+  }, [viagens, reloadAll])
+
+  const deleteViagem = useCallback(async (id: string) => {
+    const userId = getUserId()
+
+    if (!hasElectron()) {
+      setViagens((prev) => prev.filter((v) => v.id !== id))
+      setClientes((prev) => prev.map((c) => (c.viagemId === id ? { ...c, viagemId: null } : c)))
+      setPagamentos((prev) => prev.filter((p) => p.viagemId !== id))
+      return
+    }
+
+    await window.electronAPI.deleteViagem(Number(id), userId)
+    await reloadAll()
+  }, [reloadAll])
+
+  const addPagamento = useCallback(async (data: Omit<Pagamento, "id" | "historico">) => {
+    const userId = getUserId()
+
+    if (!hasElectron()) {
+      setPagamentos((prev) => [...prev, { ...data, id: generateId(), historico: [] }])
+      return
+    }
+
+    await window.electronAPI.createPagamento(userId, {
+      cliente_id: Number(data.clienteId),
+      viagem_id: Number(data.viagemId),
+      valor_total: data.valorTotal,
+      historico: "[]",
+    })
+    await reloadAll()
+  }, [reloadAll])
 
   const addPagamentoHistorico = useCallback(
-    (pagamentoId: string, historico: Omit<PagamentoHistorico, "id">) => {
-      setPagamentos((prev) =>
-        prev.map((p) => {
-          if (p.id !== pagamentoId) return p
+    async (pagamentoId: string, novoHistorico: Omit<PagamentoHistorico, "id">) => {
+      const userId = getUserId()
 
-          const updatedPagamento = {
-            ...p,
-            historico: [...p.historico, { ...historico, id: generateId() }],
-          }
-          const totalPago = getValorPago(updatedPagamento)
-          if (totalPago >= p.valorTotal) {
-            setClientes((prevClientes) =>
-              prevClientes.map((c) =>
-                c.id === p.clienteId ? { ...c, status: "pago" as const } : c
+      if (!hasElectron()) {
+        setPagamentos((prev) =>
+          prev.map((p) => {
+            if (p.id !== pagamentoId) return p
+            const updated = {
+              ...p,
+              historico: [...p.historico, { ...novoHistorico, id: generateId() }],
+            }
+            if (getValorPago(updated) >= p.valorTotal) {
+              setClientes((prev2) =>
+                prev2.map((c) =>
+                  c.id === p.clienteId ? { ...c, status: "pago" as const } : c
+                )
               )
-            )
-          }
+            }
+            return updated
+          })
+        )
+        return
+      }
 
-          return updatedPagamento
+      const pagamento = pagamentos.find((p) => p.id === pagamentoId)
+      if (!pagamento) return
+
+      const historicoAtualizado: PagamentoHistorico[] = [
+        ...pagamento.historico,
+        { ...novoHistorico, id: generateId() },
+      ]
+
+      const totalPago = historicoAtualizado.reduce((s, h) => s + h.valor, 0)
+
+      await window.electronAPI.updatePagamento(Number(pagamentoId), userId, {
+        cliente_id: Number(pagamento.clienteId),
+        viagem_id: Number(pagamento.viagemId),
+        valor_total: pagamento.valorTotal,
+        historico: JSON.stringify(historicoAtualizado),
+      })
+
+      if (totalPago >= pagamento.valorTotal) {
+        await window.electronAPI.updateCliente(Number(pagamento.clienteId), userId, {
+          status: "pago",
         })
-      )
+      }
+
+      await reloadAll()
     },
-    []
+    [pagamentos, reloadAll]
   )
 
   const getClientesByViagem = useCallback(
@@ -140,41 +404,23 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(
     () => ({
-      clientes,
-      viagens,
-      pagamentos,
-      activeSection,
-      setActiveSection,
-      addCliente,
-      updateCliente,
-      deleteCliente,
-      addViagem,
-      updateViagem,
-      deleteViagem,
-      addPagamento,
-      addPagamentoHistorico,
-      getClientesByViagem,
-      getPagamentoByCliente,
-      getViagemById,
-      getClienteById,
+      clientes, viagens, pagamentos, loading,
+      activeSection, setActiveSection,
+      addCliente, updateCliente, deleteCliente,
+      addViagem, updateViagem, deleteViagem,
+      addPagamento, addPagamentoHistorico,
+      getClientesByViagem, getPagamentoByCliente,
+      getViagemById, getClienteById,
+      reloadAll,
     }),
     [
-      clientes,
-      viagens,
-      pagamentos,
-      activeSection,
-      addCliente,
-      updateCliente,
-      deleteCliente,
-      addViagem,
-      updateViagem,
-      deleteViagem,
-      addPagamento,
-      addPagamentoHistorico,
-      getClientesByViagem,
-      getPagamentoByCliente,
-      getViagemById,
-      getClienteById,
+      clientes, viagens, pagamentos, loading, activeSection,
+      addCliente, updateCliente, deleteCliente,
+      addViagem, updateViagem, deleteViagem,
+      addPagamento, addPagamentoHistorico,
+      getClientesByViagem, getPagamentoByCliente,
+      getViagemById, getClienteById,
+      reloadAll,
     ]
   )
 
