@@ -1,6 +1,6 @@
 # ✈ GestorTrip
 
-Sistema web para **gerenciamento de viagens**, desenvolvido com **Next.js + TypeScript**, focado em organização, visualização de dados e experiência moderna de usuário.
+Sistema para **gerenciamento de viagens**, desenvolvido com **Next.js + TypeScript**, focado em organização, visualização de dados e experiência moderna de usuário.
 
 ---
 
@@ -13,6 +13,7 @@ O projeto foi desenvolvido utilizando tecnologias modernas do ecossistema React,
 - 🎨 Interface moderna e responsiva
 - 🔒 Tipagem forte com TypeScript
 - 🧩 Componentização reutilizável
+- 🌐 Acesso Online e Offline
 
 ---
 
@@ -29,6 +30,9 @@ O projeto foi desenvolvido utilizando tecnologias modernas do ecossistema React,
 - **next-themes**
 - **date-fns**
 - **clsx**
+- **SQLite**
+- **electron**
+
 
 ---
 
@@ -51,12 +55,27 @@ npm install
 
 ## ▶️ Rodando o projeto
 
-Ambiente de desenvolvimento
+Ambiente de desenvolvimento web
 
 ```bash
 npm run dev
 ```
 Acesse: http://localhost:3000
+
+
+## 🔼 Buildar
+
+```
+npm run build
+npx electron .
+```
+
+## ⏩ Gerar Executável
+
+```
+npm run electron:build
+```
+
 
 ---
 
@@ -81,9 +100,16 @@ Acesse: http://localhost:3000
 ```bash
 src/
  ├── app/
+ ├── app/login/
+ ├── app/primeiro-acesso/
+ ├── build/
  ├── components/
+ ├── components/ui
+ ├── electron/
  ├── hooks/
  ├── lib/
+ ├── public/
+ ├── scripts/
  ├── styles/
  ```
 
