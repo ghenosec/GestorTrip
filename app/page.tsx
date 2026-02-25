@@ -4,30 +4,13 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { StoreProvider, useStore } from "@/lib/store"
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarHeader,
-  SidebarInset,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarProvider,
-  SidebarTrigger,
+  Sidebar, SidebarContent, SidebarFooter, SidebarGroup,
+  SidebarGroupContent, SidebarHeader, SidebarInset, SidebarMenu,
+  SidebarMenuButton, SidebarMenuItem, SidebarProvider, SidebarTrigger,
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-import {
-  LayoutDashboard,
-  Users,
-  Earth,
-  CreditCard,
-  Search,
-  LogOut,
-  Loader2,
-} from "lucide-react"
+import { LayoutDashboard, Users, Plane, CreditCard, Search, LogOut, Loader2 } from "lucide-react"
 import { Dashboard } from "@/components/dashboard"
 import { Clientes } from "@/components/clientes"
 import { Viagens } from "@/components/viagens"
@@ -38,7 +21,7 @@ import { ThemeToggle } from "@/components/theme-toggle"
 const navItems = [
   { id: "dashboard",  label: "Dashboard",      icon: LayoutDashboard },
   { id: "clientes",   label: "Clientes",        icon: Users },
-  { id: "viagens",    label: "Viagens",         icon: Earth },
+  { id: "viagens",    label: "Viagens",         icon: Plane },
   { id: "pagamentos", label: "Pagamentos",      icon: CreditCard },
   { id: "pesquisa",   label: "Pesquisa Rápida", icon: Search },
 ]
@@ -60,8 +43,11 @@ function AppSidebar() {
   const { activeSection, setActiveSection } = useStore()
   const router = useRouter()
 
-  function handleLogout() {
+  async function handleLogout() {
     sessionStorage.removeItem("user")
+    if (typeof window !== "undefined" && window.electronAPI?.clearSession) {
+      await window.electronAPI.clearSession()
+    }
     router.replace("/login")
   }
 
@@ -70,7 +56,7 @@ function AppSidebar() {
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-            <Earth className="h-5 w-5" />
+            <Plane className="h-5 w-5" />
           </div>
           <div className="flex flex-col gap-0.5 leading-none group-data-[collapsible=icon]:hidden">
             <span className="font-semibold text-sm">GestorTrip</span>
@@ -101,13 +87,11 @@ function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-3">
-        {/* Sidebar expandida */}
+        {/* Expandida */}
         <div className="group-data-[collapsible=icon]:hidden flex flex-col gap-1">
           <ThemeToggle variant="sidebar" />
           <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
+            variant="ghost" size="sm" onClick={handleLogout}
             className="w-full justify-start gap-2 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
           >
             <LogOut className="h-3.5 w-3.5" />
@@ -116,14 +100,11 @@ function AppSidebar() {
           <p className="px-1 pt-1 text-xs text-sidebar-foreground/40">GestorTrip v1.0</p>
         </div>
 
-        {/* Sidebar colapsada */}
+        {/* Colapsada */}
         <div className="hidden group-data-[collapsible=icon]:flex flex-col items-center gap-2 py-1">
           <ThemeToggle variant="sidebar" />
-          <button
-            onClick={handleLogout}
-            title="Sair"
-            className="text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
-          >
+          <button onClick={handleLogout} title="Sair"
+            className="text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors">
             <LogOut className="h-4 w-4" />
           </button>
         </div>
