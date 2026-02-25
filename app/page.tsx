@@ -22,7 +22,7 @@ import {
   Plane,
   CreditCard,
   Search,
-  Globe,
+  Loader2,
 } from "lucide-react"
 import { Dashboard } from "@/components/dashboard"
 import { Clientes } from "@/components/clientes"
@@ -86,7 +86,16 @@ function AppSidebar() {
 }
 
 function MainContent() {
-  const { activeSection } = useStore()
+  const { activeSection, loading } = useStore()
+   if (loading) {
+    return (
+      <SidebarInset>
+        <div className="flex flex-1 items-center justify-center">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      </SidebarInset>
+    )
+  }
 
   const sectionTitle = navItems.find((n) => n.id === activeSection)?.label ?? ""
 
