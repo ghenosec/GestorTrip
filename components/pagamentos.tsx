@@ -146,7 +146,7 @@ export function Pagamentos() {
               <TableHead className="hidden sm:table-cell">Pago</TableHead>
               <TableHead className="hidden sm:table-cell">Pendente</TableHead>
               <TableHead>Progresso</TableHead>
-              <TableHead className="text-right">Acao</TableHead>
+              <TableHead className="text-right">Ação</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

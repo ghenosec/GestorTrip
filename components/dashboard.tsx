@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store"
 import { formatCurrency, getValorPago } from "@/lib/data"
 import {
   Users,
-  Plane,
+  Earth,
   CheckCircle2,
   Clock,
   TrendingUp,
@@ -82,7 +82,7 @@ export function Dashboard() {
     {
       title: "Viagens Ativas",
       value: stats.viagensAtivas,
-      icon: Plane,
+      icon: Earth,
       color: "text-indigo-600",
       bg: "bg-indigo-50",
     },

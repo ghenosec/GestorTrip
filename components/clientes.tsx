@@ -317,7 +317,7 @@ export function Clientes() {
                 return (
                   <TableRow key={c.id}>
                     <TableCell className="font-medium">{c.nomeCompleto}</TableCell>
-                    <TableCell className="hidden md:table-cell font-mono text-sm">
+                    <TableCell className="hidden md:table-cell text-sm">
                       {formatCPF(c.cpf)}
                     </TableCell>
                     <TableCell className="hidden lg:table-cell text-sm">

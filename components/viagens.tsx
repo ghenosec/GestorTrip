@@ -272,7 +272,7 @@ export function Viagens() {
 
       {viagens.length === 0 && (
         <div className="flex items-center justify-center rounded-lg border border-dashed p-12 text-muted-foreground">
-          {"Nenhuma viagem cadastrada. Clique em \"Nova Viagem\" para comecar."}
+          {"Nenhuma viagem cadastrada. Clique em \"Nova Viagem\" para começar."}
         </div>
       )}
 
@@ -284,7 +284,7 @@ export function Viagens() {
             <DialogDescription>
               {editingId
                 ? "Atualize os dados da viagem abaixo."
-                : "Preencha todos os campos obrigatorios para criar a viagem."}
+                : "Preencha todos os campos obrigatórios para criar a viagem."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
@@ -379,9 +379,9 @@ export function Viagens() {
       <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Confirmar exclusao</AlertDialogTitle>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir esta viagem? Os clientes vinculados serao desvinculados e os pagamentos serao removidos.
+              Tem certeza que deseja excluir esta viagem? Os clientes vinculados serão desvinculados e os pagamentos serao removidos.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
