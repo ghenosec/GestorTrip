@@ -23,8 +23,8 @@ function createWindow(htmlFile) {
   mainWindow.loadFile(path.join(__dirname, "../out", htmlFile))
 
   mainWindow.once("ready-to-show", () => {
+    mainWindow.maximize() 
     mainWindow.show()
-    // mainWindow.webContents.openDevTools() // descomente para debug
   })
 
   mainWindow.webContents.on("will-navigate", (event, targetUrl) => {
@@ -57,9 +57,25 @@ app.whenReady().then(() => {
 
   ipcMain.handle("theme:get", () => nativeTheme.shouldUseDarkColors ? "dark" : "light")
   ipcMain.handle("theme:set", (_, theme) => {
-    if (theme === "dark") nativeTheme.themeSource = "dark"
+    if (theme === "dark")       nativeTheme.themeSource = "dark"
     else if (theme === "light") nativeTheme.themeSource = "light"
-    else nativeTheme.themeSource = "system"
+    else                        nativeTheme.themeSource = "system"
+  })
+
+  const fs = require("fs")
+  const sessionPath = path.join(app.getPath("userData"), "session.json")
+
+  ipcMain.handle("session:save", (_, user) => {
+    try { fs.writeFileSync(sessionPath, JSON.stringify(user)) } catch {}
+  })
+  ipcMain.handle("session:load", () => {
+    try {
+      if (fs.existsSync(sessionPath)) return JSON.parse(fs.readFileSync(sessionPath, "utf8"))
+    } catch {}
+    return null
+  })
+  ipcMain.handle("session:clear", () => {
+    try { if (fs.existsSync(sessionPath)) fs.unlinkSync(sessionPath) } catch {}
   })
 
   ipcMain.handle("auth:isFirstAccess", () => db.isFirstAccess())
