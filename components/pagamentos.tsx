@@ -85,7 +85,7 @@ export function Pagamentos() {
 
     const valor = parseFloat(paymentForm.valor)
     if (!valor || valor <= 0) {
-      toast.error("Informe um valor valido")
+      toast.error("Informe um valor válido")
       return
     }
 
@@ -102,9 +102,9 @@ export function Pagamentos() {
       valor,
       formaPagamento: paymentForm.formaPagamento as
         | "pix"
-        | "cartao"
+        | "cartão"
         | "dinheiro"
-        | "transferencia",
+        | "transferência",
       data: paymentForm.data,
       observacao: paymentForm.observacao || undefined,
     })
