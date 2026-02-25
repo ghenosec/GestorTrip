@@ -177,11 +177,9 @@ export function Clientes() {
       e.telefone = "Telefone deve ter 10 ou 11 digitos"
     }
 
-    if (!form.email.trim()) {
-      e.email = "Email é obrigatório"
-    } else if (!isValidEmail(form.email)) {
-      e.email = "Email inválido"
-    }
+    if (form.email.trim() && !isValidEmail(form.email)) {
+    e.email = "Email inválido"
+}
 
     if (!form.endereco.trim()) {
       e.endereco = "Endereço é obrigatório"
@@ -436,7 +434,7 @@ export function Clientes() {
 
             {/* Email */}
             <div className="grid gap-2">
-              <Label htmlFor="email">Email *</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
@@ -503,7 +501,7 @@ export function Clientes() {
 
             {/* Observacoes */}
             <div className="grid gap-2">
-              <Label htmlFor="obs">Observacoes</Label>
+              <Label htmlFor="obs">Observações</Label>
               <Textarea
                 id="obs"
                 value={form.observacoes}
