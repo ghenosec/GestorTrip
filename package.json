@@ -11,12 +11,12 @@
     "start": "next start",
     "lint": "eslint .",
     "electron:dev": "next build && electron .",
-    "electron:build":"next build && electron-builder"
+    "electron:build": "next build && node scripts/post-build.js && electron-builder"
   },
   "build": {
     "appId": "com.gestortrip.app",
     "productName": "GestorTrip",
-    "icon": "icon.ico",
+    "icon": "favicon.ico",
     "asar": true,
     "directories": {
       "output": "dist",
@@ -30,7 +30,7 @@
     ],
     "win": {
       "target": "nsis",
-      "icon": "icon.ico"
+      "icon": "favicon.ico"
     },
     "nsis": {
       "oneClick": false,
