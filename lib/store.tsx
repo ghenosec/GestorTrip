@@ -21,6 +21,7 @@ interface StoreContextType {
   deleteViagem: (id: string) => Promise<void>
   addPagamento: (pagamento: Omit<Pagamento, "id" | "historico">) => Promise<void>
   addPagamentoHistorico: (pagamentoId: string, historico: Omit<PagamentoHistorico, "id">) => Promise<void>
+  deletePagamento: (id: string) => Promise<void>
   getClientesByViagem: (viagemId: string) => Cliente[]
   getPagamentoByCliente: (clienteId: string) => Pagamento | undefined
   getViagemById: (viagemId: string) => Viagem | undefined
@@ -130,9 +131,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const addCliente = useCallback(async (data: Omit<Cliente, "id">) => {
     const userId = getUserId()
     if (!hasElectron()) {
-      const novo: Cliente = { ...data, id: generateId() }
-      setClientes((prev) => [...prev, novo])
-      return
+      setClientes((prev) => [...prev, { ...data, id: generateId() }]); return
     }
     await window.electronAPI.createCliente(userId, {
       nome_completo:   data.nomeCompleto,
@@ -152,8 +151,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const updateCliente = useCallback(async (id: string, data: Partial<Cliente>) => {
     const userId = getUserId()
     if (!hasElectron()) {
-      setClientes((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c)))
-      return
+      setClientes((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c))); return
     }
     await window.electronAPI.updateCliente(Number(id), userId, {
       nome_completo:   data.nomeCompleto,
@@ -264,15 +262,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       })
 
       if (totalPago >= pagamento.valorTotal) {
-        await window.electronAPI.updateCliente(Number(pagamento.clienteId), userId, {
-          status: "pago",
-        })
+        await window.electronAPI.updateCliente(Number(pagamento.clienteId), userId, { status: "pago" })
       }
 
       await reloadAll()
     },
     [pagamentos, reloadAll]
   )
+
+  const deletePagamento = useCallback(async (id: string) => {
+    const userId = getUserId()
+    if (!hasElectron()) {
+      setPagamentos((prev) => prev.filter((p) => p.id !== id)); return
+    }
+    await window.electronAPI.deletePagamento(Number(id), userId)
+    await reloadAll()
+  }, [reloadAll])
 
   const getClientesByViagem   = useCallback((viagemId: string) => clientes.filter((c) => c.viagemId === viagemId), [clientes])
   const getPagamentoByCliente = useCallback((clienteId: string) => pagamentos.find((p) => p.clienteId === clienteId), [pagamentos])
@@ -283,14 +288,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     clientes, viagens, pagamentos, loading, activeSection, setActiveSection,
     addCliente, updateCliente, deleteCliente,
     addViagem, updateViagem, deleteViagem,
-    addPagamento, addPagamentoHistorico,
+    addPagamento, addPagamentoHistorico, deletePagamento,
     getClientesByViagem, getPagamentoByCliente, getViagemById, getClienteById,
     reloadAll,
   }), [
     clientes, viagens, pagamentos, loading, activeSection,
     addCliente, updateCliente, deleteCliente,
     addViagem, updateViagem, deleteViagem,
-    addPagamento, addPagamentoHistorico,
+    addPagamento, addPagamentoHistorico, deletePagamento,
     getClientesByViagem, getPagamentoByCliente, getViagemById, getClienteById,
     reloadAll,
   ])
