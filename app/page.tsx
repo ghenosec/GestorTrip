@@ -10,32 +10,32 @@ import {
 } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, Users, Plane, CreditCard, Search, LogOut, Loader2 } from "lucide-react"
-import { Dashboard } from "@/components/dashboard"
-import { Clientes } from "@/components/clientes"
-import { Viagens } from "@/components/viagens"
-import { Pagamentos } from "@/components/pagamentos"
+import { LayoutDashboard, Users, Plane, CreditCard, Search, Settings, LogOut, Loader2 } from "lucide-react"
+import { Dashboard }      from "@/components/dashboard"
+import { Clientes }       from "@/components/clientes"
+import { Viagens }        from "@/components/viagens"
+import { Pagamentos }     from "@/components/pagamentos"
 import { PesquisaRapida } from "@/components/pesquisa-rapida"
-import { ThemeToggle } from "@/components/theme-toggle"
+import { Configuracoes }  from "@/components/configuracoes"
+import { ThemeToggle }    from "@/components/theme-toggle"
 
 const navItems = [
-  { id: "dashboard",  label: "Dashboard",      icon: LayoutDashboard },
-  { id: "clientes",   label: "Clientes",        icon: Users },
-  { id: "viagens",    label: "Viagens",         icon: Plane },
-  { id: "pagamentos", label: "Pagamentos",      icon: CreditCard },
-  { id: "pesquisa",   label: "Pesquisa Rápida", icon: Search },
+  { id: "dashboard",     label: "Dashboard",      icon: LayoutDashboard },
+  { id: "clientes",      label: "Clientes",        icon: Users },
+  { id: "viagens",       label: "Viagens",         icon: Plane },
+  { id: "pagamentos",    label: "Pagamentos",      icon: CreditCard },
+  { id: "pesquisa",      label: "Pesquisa Rápida", icon: Search },
+  { id: "configuracoes", label: "Configurações",   icon: Settings },
 ]
 
 function useAuthGuard() {
   const router = useRouter()
   const [verified, setVerified] = useState(false)
-
   useEffect(() => {
     const user = sessionStorage.getItem("user")
     if (!user) router.replace("/login")
     else setVerified(true)
   }, [router])
-
   return verified
 }
 
@@ -87,20 +87,15 @@ function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-3">
-        {/* Expandida */}
         <div className="group-data-[collapsible=icon]:hidden flex flex-col gap-1">
           <ThemeToggle variant="sidebar" />
-          <Button
-            variant="ghost" size="sm" onClick={handleLogout}
-            className="w-full justify-start gap-2 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-          >
+          <Button variant="ghost" size="sm" onClick={handleLogout}
+            className="w-full justify-start gap-2 text-xs text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent">
             <LogOut className="h-3.5 w-3.5" />
             Sair
           </Button>
           <p className="px-1 pt-1 text-xs text-sidebar-foreground/40">GestorTrip v1.0</p>
         </div>
-
-        {/* Colapsada */}
         <div className="hidden group-data-[collapsible=icon]:flex flex-col items-center gap-2 py-1">
           <ThemeToggle variant="sidebar" />
           <button onClick={handleLogout} title="Sair"
@@ -135,11 +130,12 @@ function MainContent() {
         <h1 className="text-sm font-medium text-foreground">{sectionTitle}</h1>
       </header>
       <main className="flex-1 overflow-auto p-4 md:p-6">
-        {activeSection === "dashboard"  && <Dashboard />}
-        {activeSection === "clientes"   && <Clientes />}
-        {activeSection === "viagens"    && <Viagens />}
-        {activeSection === "pagamentos" && <Pagamentos />}
-        {activeSection === "pesquisa"   && <PesquisaRapida />}
+        {activeSection === "dashboard"     && <Dashboard />}
+        {activeSection === "clientes"      && <Clientes />}
+        {activeSection === "viagens"       && <Viagens />}
+        {activeSection === "pagamentos"    && <Pagamentos />}
+        {activeSection === "pesquisa"      && <PesquisaRapida />}
+        {activeSection === "configuracoes" && <Configuracoes />}
       </main>
     </SidebarInset>
   )
