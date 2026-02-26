@@ -1,5 +1,6 @@
-const { app, BrowserWindow, ipcMain, nativeTheme } = require("electron")
+const { app, BrowserWindow, ipcMain, nativeTheme, dialog } = require("electron")
 const path = require("path")
+const fs   = require("fs")
 
 let db
 let mainWindow
@@ -23,37 +24,26 @@ function createWindow(htmlFile) {
   mainWindow.loadFile(path.join(__dirname, "../out", htmlFile))
 
   mainWindow.once("ready-to-show", () => {
-    mainWindow.maximize() 
+    mainWindow.maximize()
     mainWindow.show()
   })
 
   mainWindow.webContents.on("will-navigate", (event, targetUrl) => {
     if (!targetUrl.startsWith("file://")) return
     event.preventDefault()
-
     const outDir = path.join(__dirname, "../out")
     const outDirNorm = outDir.replace(/\\/g, "/")
-
-    let filePath = targetUrl
-      .replace(/\\/g, "/")
-      .replace(/^file:\/\/\/?/, "")
-      .replace(/^[A-Za-z]:\//, "")
-
+    let filePath = targetUrl.replace(/\\/g, "/").replace(/^file:\/\/\/?/, "").replace(/^[A-Za-z]:\//, "")
     const outDirNoSlash = outDirNorm.replace(/^[A-Za-z]:\//, "")
     filePath = filePath.replace(outDirNoSlash, "").replace(/^\//, "")
-
-    if (!path.extname(filePath)) {
-      filePath = filePath
-        ? path.join(filePath, "index.html")
-        : "index.html"
-    }
-
+    if (!path.extname(filePath)) filePath = filePath ? path.join(filePath, "index.html") : "index.html"
     mainWindow.loadFile(path.join(outDir, filePath))
   })
 }
 
 app.whenReady().then(() => {
   db = require("./database")
+  const dbPath = db.getDbPath()
 
   ipcMain.handle("theme:get", () => nativeTheme.shouldUseDarkColors ? "dark" : "light")
   ipcMain.handle("theme:set", (_, theme) => {
@@ -62,20 +52,42 @@ app.whenReady().then(() => {
     else                        nativeTheme.themeSource = "system"
   })
 
-  const fs = require("fs")
   const sessionPath = path.join(app.getPath("userData"), "session.json")
+  ipcMain.handle("session:save",  (_, user) => { try { fs.writeFileSync(sessionPath, JSON.stringify(user)) } catch {} })
+  ipcMain.handle("session:load",  ()         => { try { if (fs.existsSync(sessionPath)) return JSON.parse(fs.readFileSync(sessionPath, "utf8")) } catch {} return null })
+  ipcMain.handle("session:clear", ()         => { try { if (fs.existsSync(sessionPath)) fs.unlinkSync(sessionPath) } catch {} })
 
-  ipcMain.handle("session:save", (_, user) => {
-    try { fs.writeFileSync(sessionPath, JSON.stringify(user)) } catch {}
-  })
-  ipcMain.handle("session:load", () => {
+  ipcMain.handle("db:export", async () => {
+    const { canceled, filePath: destPath } = await dialog.showSaveDialog(mainWindow, {
+      title: "Exportar banco de dados",
+      defaultPath: `gestortrip-backup-${new Date().toISOString().slice(0,10)}.db`,
+      filters: [{ name: "Banco de dados SQLite", extensions: ["db"] }],
+    })
+    if (canceled || !destPath) return { success: false, canceled: true }
     try {
-      if (fs.existsSync(sessionPath)) return JSON.parse(fs.readFileSync(sessionPath, "utf8"))
-    } catch {}
-    return null
+      db.backup(destPath)
+      return { success: true, path: destPath }
+    } catch (e) {
+      return { success: false, error: String(e) }
+    }
   })
-  ipcMain.handle("session:clear", () => {
-    try { if (fs.existsSync(sessionPath)) fs.unlinkSync(sessionPath) } catch {}
+
+  ipcMain.handle("db:import", async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: "Importar banco de dados",
+      filters: [{ name: "Banco de dados SQLite", extensions: ["db"] }],
+      properties: ["openFile"],
+    })
+    if (canceled || !filePaths[0]) return { success: false, canceled: true }
+    try {
+      db.close()
+      fs.copyFileSync(filePaths[0], dbPath)
+      delete require.cache[require.resolve("./database")]
+      db = require("./database")
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: String(e) }
+    }
   })
 
   ipcMain.handle("auth:isFirstAccess", () => db.isFirstAccess())

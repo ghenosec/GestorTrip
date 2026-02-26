@@ -1,16 +1,20 @@
 const { contextBridge, ipcRenderer } = require("electron")
 
 contextBridge.exposeInMainWorld("electronAPI", {
+
   isFirstAccess: ()            => ipcRenderer.invoke("auth:isFirstAccess"),
   register:      (email, pass) => ipcRenderer.invoke("auth:register", email, pass),
   login:         (email, pass) => ipcRenderer.invoke("auth:login", email, pass),
 
-  saveSession:  (user)  => ipcRenderer.invoke("session:save", user),
-  loadSession:  ()      => ipcRenderer.invoke("session:load"),
-  clearSession: ()      => ipcRenderer.invoke("session:clear"),
+  saveSession:  (user) => ipcRenderer.invoke("session:save", user),
+  loadSession:  ()     => ipcRenderer.invoke("session:load"),
+  clearSession: ()     => ipcRenderer.invoke("session:clear"),
 
   getTheme: ()      => ipcRenderer.invoke("theme:get"),
   setTheme: (theme) => ipcRenderer.invoke("theme:set", theme),
+
+  exportDb: () => ipcRenderer.invoke("db:export"),
+  importDb: () => ipcRenderer.invoke("db:import"),
 
   getViagens:    (userId)           => ipcRenderer.invoke("viagens:get", userId),
   createViagem:  (userId, data)     => ipcRenderer.invoke("viagens:create", userId, data),
