@@ -60,14 +60,8 @@ db.exec(`
 `)
 
 function getDbPath() { return dbPath }
-
-function backup(destPath) {
-  db.backup(destPath)
-}
-
-function close() {
-  try { db.close() } catch {}
-}
+function backup(destPath) { db.backup(destPath) }
+function close() { try { db.close() } catch {} }
 
 function isFirstAccess() {
   return db.prepare("SELECT COUNT(*) as count FROM users").get().count === 0
@@ -115,7 +109,30 @@ function updateViagem(id, userId, data) {
 }
 
 function deleteViagem(id, userId) {
-  db.prepare("DELETE FROM viagens WHERE id=? AND user_id=?").run(id, userId)
+  const deleteTx = db.transaction(() => {
+    const pagamentosPendentes = db.prepare(`
+      SELECT p.id, p.cliente_id, p.historico
+      FROM pagamentos p
+      WHERE p.viagem_id = ? AND p.user_id = ?
+    `).all(id, userId)
+
+    for (const pag of pagamentosPendentes) {
+      let historico = []
+      try { historico = JSON.parse(pag.historico ?? "[]") } catch {}
+      const valorPago = historico.reduce((s, h) => s + (h.valor ?? 0), 0)
+
+      if (valorPago === 0) {
+        db.prepare("DELETE FROM pagamentos WHERE id=?").run(pag.id)
+        db.prepare("UPDATE clientes SET status='pendente' WHERE id=?").run(pag.cliente_id)
+      }
+    }
+
+    db.prepare("UPDATE clientes SET viagem_id=NULL WHERE viagem_id=? AND user_id=?").run(id, userId)
+
+    db.prepare("DELETE FROM viagens WHERE id=? AND user_id=?").run(id, userId)
+  })
+
+  deleteTx()
   return { success: true }
 }
 
@@ -142,7 +159,6 @@ function createCliente(userId, data) {
         const jaExiste = db.prepare(
           "SELECT id FROM pagamentos WHERE cliente_id=? AND viagem_id=?"
         ).get(clienteId, data.viagem_id)
-
         if (!jaExiste) {
           db.prepare(`
             INSERT INTO pagamentos (user_id, cliente_id, viagem_id, valor_total, historico)
@@ -221,7 +237,6 @@ function createPagamento(userId, data) {
   const jaExiste = db.prepare(
     "SELECT id FROM pagamentos WHERE cliente_id=? AND viagem_id=?"
   ).get(data.cliente_id, data.viagem_id)
-
   if (jaExiste) return { success: true, id: jaExiste.id }
 
   const result = db.prepare(`
@@ -239,8 +254,10 @@ function updatePagamento(id, userId, data) {
     UPDATE pagamentos SET cliente_id=?, viagem_id=?, valor_total=?, historico=?
     WHERE id=? AND user_id=?
   `).run(
-    data.cliente_id ?? atual.cliente_id, data.viagem_id ?? atual.viagem_id,
-    data.valor_total ?? atual.valor_total, data.historico ?? atual.historico,
+    data.cliente_id ?? atual.cliente_id,
+    data.viagem_id  ?? atual.viagem_id,
+    data.valor_total ?? atual.valor_total,
+    data.historico   ?? atual.historico,
     id, userId
   )
   return { success: true }
