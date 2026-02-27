@@ -128,5 +128,6 @@ src/
 
 ## 👨‍💻 Autor
 
-Desenvolvido por ghenosec
+Desenvolvido por ghenosec.
+
 Projeto requisitado e prático utilizando arquitetura moderna com Next.js + Electron.
