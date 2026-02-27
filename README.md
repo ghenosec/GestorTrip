@@ -85,15 +85,15 @@ O executável será gerado na pasta de build configurada pelo Electron.
 
 ## 🧠 Funcionalidades (MVP)
 
--✅ Cadastro e gerenciamento de viagens
--✅ Sistema de login
--✅ Banco de dados local (SQLite)
--✅ Sincronização de dados
--✅ Interface moderna e responsiva
--✅ Validação de formulários com Zod
--✅ Componentes acessíveis com Radix UI
--✅ Gráficos e visualização de dados com Recharts
--✅ Suporte a tema Dark/Light
+- ✅ Cadastro e gerenciamento de viagens
+- ✅ Sistema de login
+- ✅ Banco de dados local (SQLite)
+- ✅ Sincronização de dados
+- ✅ Interface moderna e responsiva
+- ✅ Validação de formulários com Zod
+- ✅ Componentes acessíveis com Radix UI
+- ✅ Gráficos e visualização de dados com Recharts
+- ✅ Suporte a tema Dark/Light
 
 ## 📁 Estrutura do Projeto
 
