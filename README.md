@@ -1,24 +1,32 @@
-# ✈ GestorTrip
+# ✈️ GestorTrip
 
-Sistema para **gerenciamento de viagens**, desenvolvido com **Next.js + TypeScript**, focado em organização, visualização de dados e experiência moderna de usuário.
+Sistema para **gerenciamento de viagens corporativas**, desenvolvido com **Next.js + TypeScript + Electron**, focado em organização, visualização estratégica de dados e experiência moderna de usuário.
+
+Aplicação desktop com suporte offline, sincronização de dados e arquitetura moderna baseada no ecossistema React.
 
 ---
 
 ## 📌 Sobre o Projeto
 
-O **GestorTrip** é uma aplicação que permite gerenciar viagens de forma organizada e intuitiva.  
-O projeto foi desenvolvido utilizando tecnologias modernas do ecossistema React, com foco em:
+O **GestorTrip** é uma aplicação para controle e gestão de viagens, permitindo organizar deslocamentos, acompanhar informações importantes e visualizar dados estratégicos de forma clara.
 
-- ⚡ Performance
+O projeto foi desenvolvido com foco em:
+
+- ⚡ Alta performance
+- 🧠 Organização e visualização inteligente de dados
 - 🎨 Interface moderna e responsiva
 - 🔒 Tipagem forte com TypeScript
 - 🧩 Componentização reutilizável
-- 🌐 Acesso Online e Offline
+- 💻 Aplicação Desktop (Electron)
+- 🌐 Funcionamento Offline com sincronização
+
+Atualmente o projeto está em fase de **MVP funcional**.
 
 ---
 
-## 🚀 Tecnologias Utilizadas
+## 🚀 Stacks
 
+### 🖥️ Frontend
 - **Next.js**
 - **React**
 - **TypeScript**
@@ -30,9 +38,12 @@ O projeto foi desenvolvido utilizando tecnologias modernas do ecossistema React,
 - **next-themes**
 - **date-fns**
 - **clsx**
-- **SQLite**
-- **electron**
 
+### 🗄️ Banco de Dados
+- **SQLite**
+
+### 🖥️ Desktop
+- **Electron**
 
 ---
 
@@ -45,76 +56,77 @@ git clone https://github.com/ghenosec/GestorTrip.git
 cd GestorTrip
 ```
 
-## 2️⃣ Instale as dependências
+### 2️⃣ Instale as dependências
 
 O projeto utiliza npm:
 
 ```bash
 npm install
 ```
+Acesse
+```bash
+http://localhost:3000
+```
 
-## ▶️ Rodando o projeto
-
-Ambiente de desenvolvimento web
+### 🖥️ Executando como Aplicação Desktop
+## 🔼 Build da aplicação
 
 ```bash
-npm run dev
-```
-Acesse: http://localhost:3000
-
-
-## 🔼 Buildar
-
-```
 npm run build
 npx electron .
 ```
 
-## ⏩ Gerar Executável
+### 📦 Gerando Executável (.exe)
 
-```
+```bash
 npm run electron:build
 ```
+O executável será gerado na pasta de build configurada pelo Electron.
 
+## 🧠 Funcionalidades (MVP)
 
----
-
-## 🧠 Funcionalidades
-
-- ✅ Cadastro e gerenciamento de viagens
-
-- ✅ Interface moderna e responsiva
-
-- ✅ Validação de formulários com Zod
-
-- ✅ Componentes acessíveis com Radix UI
-
-- ✅ Gráficos e visualização de dados
-
-- ✅ Suporte a tema Dark/Light
-
----
+-✅ Cadastro e gerenciamento de viagens
+-✅ Sistema de login
+-✅ Banco de dados local (SQLite)
+-✅ Sincronização de dados
+-✅ Interface moderna e responsiva
+-✅ Validação de formulários com Zod
+-✅ Componentes acessíveis com Radix UI
+-✅ Gráficos e visualização de dados com Recharts
+-✅ Suporte a tema Dark/Light
 
 ## 📁 Estrutura do Projeto
 
 ```bash
 src/
  ├── app/
- ├── app/login/
- ├── app/primeiro-acesso/
- ├── build/
+ │   ├── login/
+ │   ├── primeiro-acesso/
+ │
  ├── components/
- ├── components/ui
+ │   └── ui/
+ │
  ├── electron/
  ├── hooks/
  ├── lib/
- ├── public/
  ├── scripts/
  ├── styles/
- ```
+ ├── public/
+ └── build/
+```
 
- ### O projeto não está finalizado, até o momento somente o MVP está feito. Para o futuro:
-    - [x] Criar banco
-    - [x] Login
-    - [x] Sincronização de dados
-    - [x] No começo a ideia era ser um PWA, mas foi mudado para um .exe usando electron.
+## 🛣️ Roadmap
+✔️ Concluído
+- Estrutura base com Next.js + TypeScript
+- Criação do banco de dados
+- Sistema de login
+- Sincronização de dados
+- Migração de PWA para aplicação Desktop com Electron
+
+🚧 Próximos Passos
+[] Relatórios avançados
+
+## 👨‍💻 Autor
+
+Desenvolvido por ghenosec
+Projeto requisitado e prático utilizando arquitetura moderna com Next.js + Electron.
