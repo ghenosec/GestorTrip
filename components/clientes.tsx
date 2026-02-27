@@ -352,7 +352,6 @@ export function Clientes() {
         </Table>
       </div>
 
-      {/* Create / Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
@@ -378,7 +377,6 @@ export function Clientes() {
               )}
             </div>
 
-            {/* CPF & RG */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="cpf">CPF *</Label>
@@ -400,7 +398,6 @@ export function Clientes() {
               </div>
             </div>
 
-            {/* Nascimento & Telefone */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="nascimento">Data de nascimento *</Label>
@@ -432,7 +429,6 @@ export function Clientes() {
               </div>
             </div>
 
-            {/* Email */}
             <div className="grid gap-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -447,7 +443,6 @@ export function Clientes() {
               )}
             </div>
 
-            {/* Endereco */}
             <div className="grid gap-2">
               <Label htmlFor="endereco">Endereço *</Label>
               <Input
@@ -461,7 +456,6 @@ export function Clientes() {
               )}
             </div>
 
-            {/* Viagem */}
             <div className="grid gap-2">
               <Label htmlFor="viagem">Viagem vinculada</Label>
               <Select
@@ -482,7 +476,6 @@ export function Clientes() {
               </Select>
             </div>
 
-            {/* Status */}
             <div className="grid gap-2">
               <Label htmlFor="status">Status</Label>
               <Select
@@ -499,7 +492,6 @@ export function Clientes() {
               </Select>
             </div>
 
-            {/* Observacoes */}
             <div className="grid gap-2">
               <Label htmlFor="obs">Observações</Label>
               <Textarea
@@ -522,7 +514,6 @@ export function Clientes() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete confirmation */}
       <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

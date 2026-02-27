@@ -154,7 +154,6 @@ export function PesquisaRapida() {
         </div>
       )}
 
-      {/* Modal de edição */}
       <Dialog open={!!editing} onOpenChange={(open) => { if (!open) setEditing(null) }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>

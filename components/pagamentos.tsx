@@ -122,7 +122,6 @@ export function Pagamentos() {
         <span className="text-xs text-muted-foreground">{filtered.length} registros</span>
       </div>
 
-      {/* Filtros */}
       <div className="flex flex-col gap-3 sm:flex-row">
         <Input
           placeholder="Buscar por cliente ou viagem..."
@@ -143,7 +142,6 @@ export function Pagamentos() {
         </Select>
       </div>
 
-      {/* Tabela */}
       <div className="rounded-lg border bg-card overflow-hidden">
         <Table>
           <TableHeader>
@@ -226,7 +224,6 @@ export function Pagamentos() {
                       </TableCell>
                     </TableRow>
 
-                    {/* Linha expandida — histórico de parcelas */}
                     {isExpanded && (
                       <TableRow key={`${p.id}-hist`} className="bg-muted/20 hover:bg-muted/20">
                         <TableCell colSpan={7} className="py-3 px-6">
@@ -260,7 +257,6 @@ export function Pagamentos() {
         </Table>
       </div>
 
-      {/* Modal — registrar parcela */}
       <Dialog open={parcelaOpen} onOpenChange={setParcelaOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -331,7 +327,6 @@ export function Pagamentos() {
         </DialogContent>
       </Dialog>
 
-      {/* Confirmar exclusão */}
       <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

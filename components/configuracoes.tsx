@@ -56,7 +56,6 @@ export function Configuracoes() {
         <p className="text-sm text-muted-foreground">Gerencie seus dados e preferências</p>
       </div>
 
-      {/* Backup */}
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium">Backup dos dados</CardTitle>
@@ -67,7 +66,6 @@ export function Configuracoes() {
             instale o GestorTrip no novo dispositivo e importe o arquivo de backup para restaurar todos os seus dados.
           </p>
 
-          {/* Exportar */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div>
@@ -96,7 +94,6 @@ export function Configuracoes() {
 
           <div className="border-t" />
 
-          {/* Importar */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div>

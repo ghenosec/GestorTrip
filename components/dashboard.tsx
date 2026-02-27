@@ -101,7 +101,6 @@ export function Dashboard() {
 
   return (
     <div className="flex flex-col gap-6">
-      {/* KPIs */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {kpis.map((kpi) => (
           <Card key={kpi.title}>
@@ -118,15 +117,12 @@ export function Dashboard() {
         ))}
       </div>
 
-      {/* Gráficos */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        {/* Barras — Receita por Viagem */}
         <Card className="lg:col-span-2">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Receita por Viagem</CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
-            {/* Legenda manual */}
             <div className="mb-3 flex items-center gap-5 text-xs text-muted-foreground">
               <div className="flex items-center gap-1.5">
                 <span className="h-3 w-3 rounded-sm" style={{ background: COR_TOTAL }} />
@@ -182,7 +178,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Pizza — Status dos Clientes */}
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Status dos Clientes</CardTitle>
