@@ -42,7 +42,6 @@ export function Pagamentos() {
   const [viagemFilter, setViagemFilter] = useState("todas")
   const [expandedId, setExpandedId]   = useState<string | null>(null)
 
-  // Modal — adicionar parcela
   const [parcelaOpen, setParcelaOpen]     = useState(false)
   const [parcelaPagId, setParcelaPagId]   = useState<string | null>(null)
   const [parcelaValor, setParcelaValor]   = useState("")
@@ -51,7 +50,6 @@ export function Pagamentos() {
   const [parcelaObs, setParcelaObs]       = useState("")
   const [parcelaSaving, setParcelaSaving] = useState(false)
 
-  // Confirmar exclusão de pagamento
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const filtered = useMemo(() => {

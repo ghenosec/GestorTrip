@@ -3,7 +3,7 @@
 import { useMemo } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useStore } from "@/lib/store"
-import { formatCurrency, getValorPago } from "@/lib/data"
+import { formatCurrency, getValorPago, getValorPendente } from "@/lib/data"
 import { Users, Earth, CheckCircle2, Clock, TrendingUp, Wallet } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -57,7 +57,7 @@ export function Dashboard() {
     const viagensAtivas      = viagens.filter((v) => v.status === "ativa").length
     const clientesPagos      = clientes.filter((c) => c.status === "pago").length
     const clientesPendentes  = clientes.filter((c) => c.status === "pendente").length
-    const valorTotalReceber  = pagamentos.reduce((s, p) => s + p.valorTotal, 0)
+    const valorTotalReceber  = pagamentos.reduce((s, p) => s + getValorPendente(p), 0)
     const valorTotalRecebido = pagamentos.reduce((s, p) => s + getValorPago(p), 0)
     return { totalClientes, viagensAtivas, clientesPagos, clientesPendentes, valorTotalReceber, valorTotalRecebido }
   }, [clientes, viagens, pagamentos])
@@ -87,7 +87,6 @@ export function Dashboard() {
   ], [stats])
 
   const PIE_COLORS = ["#059669", "#d97706"]
-
   const COR_TOTAL    = "#3b82f6"
   const COR_RECEBIDO = "#10b981"
 
