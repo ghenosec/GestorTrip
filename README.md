@@ -124,7 +124,8 @@ src/
 - Migração de PWA para aplicação Desktop com Electron
 
 🚧 Próximos Passos
-[] Relatórios avançados
+
+[ ] Relatórios avançados
 
 ## 👨‍💻 Autor
 
