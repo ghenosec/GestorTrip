@@ -73,7 +73,7 @@ function rowToHistorico(row: Record<string, unknown>): PagamentoHistorico {
   return {
     id: String(row.id),
     valor: Number(row.valor ?? 0),
-    formaPagamento: (row.forma_pagamento as PagamentoHistorico["formaPagamento"]) ?? "pix",
+    formaPagamento: (row.formaPagamento ?? row.forma_pagamento) as PagamentoHistorico["formaPagamento"] ?? "pix",
     data: String(row.data ?? ""),
     observacao: row.observacao ? String(row.observacao) : undefined,
   }
@@ -128,6 +128,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => { reloadAll() }, [reloadAll])
 
+  // ── Clientes ─────────────────────────────────────────────────────────
   const addCliente = useCallback(async (data: Omit<Cliente, "id">) => {
     const userId = getUserId()
     if (!hasElectron()) {
@@ -181,6 +182,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await reloadAll()
   }, [reloadAll])
 
+  // ── Viagens ──────────────────────────────────────────────────────────
   const addViagem = useCallback(async (data: Omit<Viagem, "id">) => {
     const userId = getUserId()
     if (!hasElectron()) { setViagens((prev) => [...prev, { ...data, id: generateId() }]); return }
@@ -218,6 +220,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await reloadAll()
   }, [reloadAll])
 
+  // ── Pagamentos ───────────────────────────────────────────────────────
   const addPagamento = useCallback(async (data: Omit<Pagamento, "id" | "historico">) => {
     const userId = getUserId()
     if (!hasElectron()) {
@@ -279,6 +282,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await reloadAll()
   }, [reloadAll])
 
+  // ── Helpers ──────────────────────────────────────────────────────────
   const getClientesByViagem   = useCallback((viagemId: string) => clientes.filter((c) => c.viagemId === viagemId), [clientes])
   const getPagamentoByCliente = useCallback((clienteId: string) => pagamentos.find((p) => p.clienteId === clienteId), [pagamentos])
   const getViagemById         = useCallback((viagemId: string) => viagens.find((v) => v.id === viagemId), [viagens])
