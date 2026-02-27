@@ -25,23 +25,23 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react"
 import { toast } from "sonner"
-import type { Pagamento } from "@/lib/data"
 
 const FORMAS = ["pix", "dinheiro", "cartão", "transferência"] as const
 const FORMAS_LABEL: Record<string, string> = {
   pix: "PIX",
   dinheiro: "Dinheiro",
-  cartão: "Cartão",
-  transferência: "Transferência",
+  "cartão": "Cartão",
+  "transferência": "Transferência",
 }
 
 export function Pagamentos() {
-  const { pagamentos, clientes, viagens, addPagamentoHistorico, deletePagamento, getClienteById, getViagemById } = useStore()
+  const { pagamentos, viagens, addPagamentoHistorico, deletePagamento, getClienteById, getViagemById } = useStore()
 
   const [search, setSearch]           = useState("")
   const [viagemFilter, setViagemFilter] = useState("todas")
   const [expandedId, setExpandedId]   = useState<string | null>(null)
 
+  // Modal — adicionar parcela
   const [parcelaOpen, setParcelaOpen]     = useState(false)
   const [parcelaPagId, setParcelaPagId]   = useState<string | null>(null)
   const [parcelaValor, setParcelaValor]   = useState("")
@@ -50,6 +50,7 @@ export function Pagamentos() {
   const [parcelaObs, setParcelaObs]       = useState("")
   const [parcelaSaving, setParcelaSaving] = useState(false)
 
+  // Confirmar exclusão de pagamento
   const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const filtered = useMemo(() => {
@@ -122,6 +123,7 @@ export function Pagamentos() {
         <span className="text-xs text-muted-foreground">{filtered.length} registros</span>
       </div>
 
+      {/* Filtros */}
       <div className="flex flex-col gap-3 sm:flex-row">
         <Input
           placeholder="Buscar por cliente ou viagem..."
@@ -142,6 +144,7 @@ export function Pagamentos() {
         </Select>
       </div>
 
+      {/* Tabela */}
       <div className="rounded-lg border bg-card overflow-hidden">
         <Table>
           <TableHeader>
@@ -224,6 +227,7 @@ export function Pagamentos() {
                       </TableCell>
                     </TableRow>
 
+                    {/* Linha expandida — histórico de parcelas */}
                     {isExpanded && (
                       <TableRow key={`${p.id}-hist`} className="bg-muted/20 hover:bg-muted/20">
                         <TableCell colSpan={7} className="py-3 px-6">
@@ -257,6 +261,7 @@ export function Pagamentos() {
         </Table>
       </div>
 
+      {/* Modal — registrar parcela */}
       <Dialog open={parcelaOpen} onOpenChange={setParcelaOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
@@ -327,6 +332,7 @@ export function Pagamentos() {
         </DialogContent>
       </Dialog>
 
+      {/* Confirmar exclusão */}
       <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
