@@ -128,7 +128,6 @@ function deleteViagem(id, userId) {
     }
 
     db.prepare("UPDATE clientes SET viagem_id=NULL WHERE viagem_id=? AND user_id=?").run(id, userId)
-
     db.prepare("DELETE FROM viagens WHERE id=? AND user_id=?").run(id, userId)
   })
 
@@ -136,6 +135,7 @@ function deleteViagem(id, userId) {
   return { success: true }
 }
 
+// ── Clientes ─────────────────────────────────────────────────────────────
 function getClientes(userId) {
   return db.prepare("SELECT * FROM clientes WHERE user_id = ? ORDER BY nome_completo ASC").all(userId)
 }
@@ -229,6 +229,7 @@ function deleteCliente(id, userId) {
   return { success: true }
 }
 
+// ── Pagamentos ───────────────────────────────────────────────────────────
 function getPagamentos(userId) {
   return db.prepare("SELECT * FROM pagamentos WHERE user_id = ? ORDER BY created_at DESC").all(userId)
 }
