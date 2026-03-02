@@ -17,6 +17,8 @@ declare global {
       exportDb: () => Promise<{ success: boolean; canceled?: boolean; path?: string; error?: string }>
       importDb: () => Promise<{ success: boolean; canceled?: boolean; error?: string }>
 
+      gerarRelatorio: (htmlContent: string) => Promise<{ success: boolean; canceled?: boolean; path?: string; error?: string }>
+
       getViagens:   (userId: number) => Promise<Record<string, unknown>[]>
       createViagem: (userId: number, data: Record<string, unknown>) => Promise<{ success: boolean; id?: number }>
       updateViagem: (id: number, userId: number, data: Record<string, unknown>) => Promise<{ success: boolean }>
