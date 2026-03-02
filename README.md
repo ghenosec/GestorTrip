@@ -93,7 +93,6 @@ src/
 ## 👨‍💻 Autor
 
 Desenvolvido por ghenosec.
-<<<<<<< HEAD
 
 Projeto requisitado e prático utilizando arquitetura moderna com Next.js + Electron.
 
@@ -101,5 +100,4 @@ Projeto requisitado e prático utilizando arquitetura moderna com Next.js + Elec
 
 This project is proprietary software. All rights reserved.
 Unauthorized use, reproduction, or distribution is strictly prohibited.
-=======
->>>>>>> a948b58d9288135c2c89ba90a3506587390499d8
+
