@@ -275,7 +275,6 @@ export function Viagens() {
           {"Nenhuma viagem cadastrada. Clique em \"Nova Viagem\" para começar."}
         </div>
       )}
-
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -373,7 +372,6 @@ export function Viagens() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
       <AlertDialog open={deleteId !== null} onOpenChange={(open) => !open && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

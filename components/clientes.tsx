@@ -363,7 +363,6 @@ export function Clientes() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
-            {/* Nome */}
             <div className="grid gap-2">
               <Label htmlFor="nome">Nome completo *</Label>
               <Input
