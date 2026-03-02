@@ -38,7 +38,9 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "GestorTrip",
-      "installerHeaderIcon": "icon.ico"
+      "installerHeaderIcon": "icon.ico",
+      "license": "license.txt",
+      "unicode": true
     },
     "extraResources": [],
     "npmRebuild": true

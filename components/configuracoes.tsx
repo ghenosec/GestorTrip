@@ -123,6 +123,26 @@ export function Configuracoes() {
           </div>
         </CardContent>
       </Card>
+      <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-medium">Sobre o aplicativo</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 text-xs text-muted-foreground leading-relaxed">
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-medium text-foreground">GestorTrip v1.0</p>
+                <p>Sistema de Gestão de Viagens</p>
+              </div>
+              <div className="border-t my-2" />
+              <p>
+                © 2026 Ghenosec. Todos os direitos reservados.
+              </p>
+              <p>
+                Este software é licenciado, não vendido.
+                O uso é permitido apenas conforme os termos da licença.
+                É proibida a engenharia reversa, descompilação ou redistribuição.
+              </p>
+        </CardContent>
+      </Card>
     </div>
   )
 }

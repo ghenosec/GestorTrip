@@ -1,0 +1,52 @@
+﻿END USER LICENSE AGREEMENT (EULA)
+GestorTrip – Sistema de Gestão de Viagens
+
+Última atualização: 02 de março de 2026
+
+Este Contrato de Licença de Usuário Final ("EULA") é um acordo legal entre você ("Usuário") e Ghenosec ("Licenciante"), proprietário do software GestorTrip ("Software").
+
+Ao instalar ou utilizar o Software, você concorda com os termos deste contrato.
+
+1. CONCESSÃO DE LICENÇA
+
+Mediante pagamento único da licença, o Usuário recebe uma licença perpétua, não exclusiva, intransferível e revogável para utilizar o Software exclusivamente para fins internos.
+
+Esta licença refere-se apenas à versão adquirida do Software.
+
+2. PROPRIEDADE
+
+O Software é licenciado, não vendido. Todos os direitos autorais, propriedade intelectual e demais direitos permanecem exclusivamente com o Licenciante.
+
+3. RESTRIÇÕES
+
+O Usuário NÃO poderá:
+
+- Copiar, modificar ou criar obras derivadas do Software;
+- Distribuir, sublicenciar, revender, compartilhar ou transferir o Software a terceiros;
+- Realizar engenharia reversa, descompilar ou tentar extrair o código-fonte;
+- Remover ou alterar avisos de copyright;
+- Disponibilizar o Software em redes públicas ou compartilhadas.
+
+4. ATUALIZAÇÕES
+
+A compra da licença não garante atualizações futuras gratuitas, salvo se expressamente acordado pelo Licenciante.
+
+5. USO NÃO AUTORIZADO
+
+Qualquer uso indevido resultará na revogação imediata da licença, sem direito a reembolso, além das medidas legais cabíveis.
+
+6. ISENÇÃO DE GARANTIA
+
+O Software é fornecido "no estado em que se encontra", sem garantias de qualquer tipo.
+
+7. LIMITAÇÃO DE RESPONSABILIDADE
+
+O Licenciante não será responsável por quaisquer danos diretos, indiretos ou consequenciais decorrentes do uso do Software.
+
+8. LEGISLAÇÃO APLICÁVEL
+
+Este contrato será regido pelas leis da República Federativa do Brasil.
+
+Ao clicar em "Aceito" durante a instalação, o Usuário declara ter lido e concordado integralmente com este contrato.
+
+© 2026 Ghenosec. Todos os direitos reservados.
