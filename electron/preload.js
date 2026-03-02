@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   exportDb: () => ipcRenderer.invoke("db:export"),
   importDb: () => ipcRenderer.invoke("db:import"),
 
+  gerarRelatorio: (htmlContent) => ipcRenderer.invoke("relatorio:gerar", htmlContent),
+
   getViagens:    (userId)           => ipcRenderer.invoke("viagens:get", userId),
   createViagem:  (userId, data)     => ipcRenderer.invoke("viagens:create", userId, data),
   updateViagem:  (id, userId, data) => ipcRenderer.invoke("viagens:update", id, userId, data),
