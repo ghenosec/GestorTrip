@@ -47,43 +47,8 @@ Atualmente o projeto está em fase de **MVP funcional**.
 
 ---
 
-## 📦 Instalação
 
-### 1️⃣ Clone o repositório
-
-```bash
-git clone https://github.com/ghenosec/GestorTrip.git
-cd GestorTrip
-```
-
-### 2️⃣ Instale as dependências
-
-O projeto utiliza npm:
-
-```bash
-npm install
-```
-Acesse
-```bash
-http://localhost:3000
-```
-
-### 🖥️ Executando como Aplicação Desktop
-## 🔼 Build da aplicação
-
-```bash
-npm run build
-npx electron .
-```
-
-### 📦 Gerando Executável (.exe)
-
-```bash
-npm run electron:build
-```
-O executável será gerado na pasta de build configurada pelo Electron.
-
-## 🧠 Funcionalidades (MVP)
+## 🧠 Funcionalidades
 
 - ✅ Cadastro e gerenciamento de viagens
 - ✅ Sistema de login
@@ -94,6 +59,7 @@ O executável será gerado na pasta de build configurada pelo Electron.
 - ✅ Componentes acessíveis com Radix UI
 - ✅ Gráficos e visualização de dados com Recharts
 - ✅ Suporte a tema Dark/Light
+- ✅ Exportar relatórios em PDF
 
 ## 📁 Estrutura do Projeto
 
@@ -123,13 +89,11 @@ src/
 - Sincronização de dados
 - Migração de PWA para aplicação Desktop com Electron
 
-🚧 Próximos Passos
-
-[ ] Relatórios avançados
 
 ## 👨‍💻 Autor
 
 Desenvolvido por ghenosec.
+<<<<<<< HEAD
 
 Projeto requisitado e prático utilizando arquitetura moderna com Next.js + Electron.
 
@@ -137,3 +101,5 @@ Projeto requisitado e prático utilizando arquitetura moderna com Next.js + Elec
 
 This project is proprietary software. All rights reserved.
 Unauthorized use, reproduction, or distribution is strictly prohibited.
+=======
+>>>>>>> a948b58d9288135c2c89ba90a3506587390499d8
