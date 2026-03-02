@@ -132,3 +132,8 @@ src/
 Desenvolvido por ghenosec.
 
 Projeto requisitado e prático utilizando arquitetura moderna com Next.js + Electron.
+
+## 📄 License
+
+This project is proprietary software. All rights reserved.
+Unauthorized use, reproduction, or distribution is strictly prohibited.
