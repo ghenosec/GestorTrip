@@ -83,7 +83,7 @@ npm run electron:build
 ```
 O executável será gerado na pasta de build configurada pelo Electron.
 
-## 🧠 Funcionalidades (MVP)
+## 🧠 Funcionalidades
 
 - ✅ Cadastro e gerenciamento de viagens
 - ✅ Sistema de login
@@ -94,6 +94,7 @@ O executável será gerado na pasta de build configurada pelo Electron.
 - ✅ Componentes acessíveis com Radix UI
 - ✅ Gráficos e visualização de dados com Recharts
 - ✅ Suporte a tema Dark/Light
+- ✅ Exportar relatórios em PDF
 
 ## 📁 Estrutura do Projeto
 
@@ -123,9 +124,6 @@ src/
 - Sincronização de dados
 - Migração de PWA para aplicação Desktop com Electron
 
-🚧 Próximos Passos
-
-[ ] Relatórios avançados
 
 ## 👨‍💻 Autor
 
