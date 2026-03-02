@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Earth, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -11,12 +12,12 @@ import { ThemeToggle } from "@/components/theme-toggle"
 
 export default function PrimeiroAcessoPage() {
   const router = useRouter()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirm, setConfirm] = useState("")
+  const [email, setEmail]         = useState("")
+  const [password, setPassword]   = useState("")
+  const [confirm, setConfirm]     = useState("")
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirm, setShowConfirm] = useState(false)
-  const [error, setError] = useState("")
+  const [showConfirm, setShowConfirm]   = useState(false)
+  const [error, setError]   = useState("")
   const [loading, setLoading] = useState(false)
 
   function validate() {
@@ -31,10 +32,8 @@ export default function PrimeiroAcessoPage() {
     e.preventDefault()
     const err = validate()
     if (err) { setError(err); return }
-
     setLoading(true)
     setError("")
-
     try {
       if (typeof window.electronAPI === "undefined") {
         await new Promise((r) => setTimeout(r, 600))
@@ -42,10 +41,8 @@ export default function PrimeiroAcessoPage() {
         router.replace("/")
         return
       }
-
       const reg = await window.electronAPI.register(email, password)
       if (!reg.success) { setError(reg.error ?? "Erro ao criar conta."); return }
-
       const login = await window.electronAPI.login(email, password)
       if (login.success && login.user) {
         sessionStorage.setItem("user", JSON.stringify(login.user))
@@ -62,9 +59,7 @@ export default function PrimeiroAcessoPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center bg-background px-4">
-      {/* Botão de tema no canto */}
       <ThemeToggle variant="page" />
-
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
@@ -94,7 +89,6 @@ export default function PrimeiroAcessoPage() {
                   value={email} onChange={(e) => { setEmail(e.target.value); setError("") }}
                   disabled={loading} className="h-9 text-sm" />
               </div>
-
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="password" className="text-xs font-medium">Senha</Label>
                 <div className="relative">
@@ -108,7 +102,6 @@ export default function PrimeiroAcessoPage() {
                   </button>
                 </div>
               </div>
-
               <div className="flex flex-col gap-1.5">
                 <Label htmlFor="confirm" className="text-xs font-medium">Confirmar senha</Label>
                 <div className="relative">
@@ -122,13 +115,11 @@ export default function PrimeiroAcessoPage() {
                   </button>
                 </div>
               </div>
-
               {error && (
                 <p className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
                   {error}
                 </p>
               )}
-
               <Button type="submit" disabled={loading} className="mt-1 h-9 w-full text-sm font-medium">
                 {loading
                   ? <span className="flex items-center gap-2"><Loader2 className="h-3.5 w-3.5 animate-spin" />Criando conta…</span>
@@ -136,9 +127,20 @@ export default function PrimeiroAcessoPage() {
                 }
               </Button>
             </form>
+            <div className="mt-4 pt-4 border-t border-border text-center">
+              <p className="text-xs text-muted-foreground">
+                Já tem uma conta?{" "}
+                <Link
+                  href="/login"
+                  className="font-medium text-primary underline underline-offset-4 hover:opacity-75 transition-opacity"
+                >
+                  Fazer login
+                </Link>
+              </p>
+            </div>
+
           </CardContent>
         </Card>
-
         <p className="mt-6 text-center text-xs text-muted-foreground">GestorTrip v1.0</p>
       </div>
     </div>
