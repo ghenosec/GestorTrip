@@ -8,3 +8,45 @@ node_modules/
 .next/
 .env*.local
 .DS_Store
+.env.local
+
+# Cloudflare / Wrangler
+.wrangler/
+wrangler.toml
+
+# Electron build
+dist/
+release/
+
+# Variáveis de ambiente
+.env
+.env.local
+.env.production
+.env*.local
+
+# Licença local (gerada no dispositivo do usuário)
+license.json
+
+# Banco local de desenvolvimento
+*.db
+*.db-journal
+
+# Sessão local
+session.json
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Licenças
+generate-licenses.js
+insert-licenses.sql
+license.json
