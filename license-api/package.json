@@ -1,0 +1,15 @@
+{
+  "name": "gestortrip-licenses",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:setup": "wrangler d1 create gestortrip-licenses && wrangler d1 execute gestortrip-licenses --file=schema.sql",
+    "db:migrate": "wrangler d1 execute gestortrip-licenses --file=schema.sql",
+    "gen": "node generate-licenses.js"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
