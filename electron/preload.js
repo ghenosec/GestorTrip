@@ -2,6 +2,9 @@ const { contextBridge, ipcRenderer } = require("electron")
 
 contextBridge.exposeInMainWorld("electronAPI", {
 
+  checkLicense:    ()           => ipcRenderer.invoke("license:check"),
+  activateLicense: (licenseKey) => ipcRenderer.invoke("license:activate", licenseKey),
+
   isFirstAccess: ()            => ipcRenderer.invoke("auth:isFirstAccess"),
   register:      (email, pass) => ipcRenderer.invoke("auth:register", email, pass),
   login:         (email, pass) => ipcRenderer.invoke("auth:login", email, pass),

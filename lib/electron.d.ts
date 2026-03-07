@@ -3,6 +3,9 @@ export {}
 declare global {
   interface Window {
     electronAPI: {
+      checkLicense:    () => Promise<boolean>
+      activateLicense: (licenseKey: string) => Promise<{ success: boolean; message?: string }>
+
       isFirstAccess: () => Promise<boolean>
       register: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
       login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: { id: number; email: string } }>
