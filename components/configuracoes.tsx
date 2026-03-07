@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useStore } from "@/lib/store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Download, Upload, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
@@ -8,6 +9,7 @@ import { Download, Upload, CheckCircle2, AlertCircle, Loader2 } from "lucide-rea
 type Status = { type: "success" | "error"; message: string } | null
 
 export function Configuracoes() {
+  const { reloadAll } = useStore()
   const [exportStatus, setExportStatus] = useState<Status>(null)
   const [importStatus, setImportStatus] = useState<Status>(null)
   const [exporting, setExporting]       = useState(false)
@@ -20,7 +22,7 @@ export function Configuracoes() {
       const result = await window.electronAPI.exportDb()
       if (result.canceled) { setExporting(false); return }
       if (result.success) {
-        setExportStatus({ type: "success", message: `Backup salvo com sucesso.` })
+        setExportStatus({ type: "success", message: "Backup salvo com sucesso." })
       } else {
         setExportStatus({ type: "error", message: result.error ?? "Erro ao exportar." })
       }
@@ -38,7 +40,8 @@ export function Configuracoes() {
       const result = await window.electronAPI.importDb()
       if (result.canceled) { setImporting(false); return }
       if (result.success) {
-        setImportStatus({ type: "success", message: "Banco importado com sucesso. Reinicie o app para garantir que tudo seja recarregado." })
+        await reloadAll()
+        setImportStatus({ type: "success", message: "Banco importado e dados recarregados com sucesso!" })
       } else {
         setImportStatus({ type: "error", message: result.error ?? "Erro ao importar." })
       }
@@ -94,6 +97,7 @@ export function Configuracoes() {
 
           <div className="border-t" />
 
+          {/* Importar */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div>
@@ -123,24 +127,23 @@ export function Configuracoes() {
           </div>
         </CardContent>
       </Card>
+
       <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Sobre o aplicativo</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3 text-xs text-muted-foreground leading-relaxed">
-              <div className="flex flex-col gap-1">
-                <p className="text-sm font-medium text-foreground">GestorTrip v1.0</p>
-                <p>Sistema de Gestão de Viagens</p>
-              </div>
-              <div className="border-t my-2" />
-              <p>
-                © 2026 Ghenosec. Todos os direitos reservados.
-              </p>
-              <p>
-                Este software é licenciado, não vendido.
-                O uso é permitido apenas conforme os termos da licença.
-                É proibida a engenharia reversa, descompilação ou redistribuição.
-              </p>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium">Sobre o aplicativo</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 text-xs text-muted-foreground leading-relaxed">
+          <div className="flex flex-col gap-1">
+            <p className="text-sm font-medium text-foreground">GestorTrip v1.0</p>
+            <p>Sistema de Gestão de Viagens</p>
+          </div>
+          <div className="border-t my-2" />
+          <p>© 2026 Ghenosec. Todos os direitos reservados.</p>
+          <p>
+            Este software é licenciado, não vendido.
+            O uso é permitido apenas conforme os termos da licença.
+            É proibida a engenharia reversa, descompilação ou redistribuição.
+          </p>
         </CardContent>
       </Card>
     </div>
