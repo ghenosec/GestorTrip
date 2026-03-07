@@ -3,12 +3,13 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Earth, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react"
+import { Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { Logo } from "@/components/logo"
 
 export default function PrimeiroAcessoPage() {
   const router = useRouter()
@@ -62,9 +63,7 @@ export default function PrimeiroAcessoPage() {
       <ThemeToggle variant="page" />
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-            <Earth className="h-6 w-6" />
-          </div>
+          <Logo size={48} />
           <div className="text-center">
             <h1 className="text-xl font-semibold text-foreground">GestorTrip</h1>
             <p className="text-sm text-muted-foreground">Gestão de Viagens</p>
@@ -130,15 +129,11 @@ export default function PrimeiroAcessoPage() {
             <div className="mt-4 pt-4 border-t border-border text-center">
               <p className="text-xs text-muted-foreground">
                 Já tem uma conta?{" "}
-                <Link
-                  href="/login"
-                  className="font-medium text-primary underline underline-offset-4 hover:opacity-75 transition-opacity"
-                >
+                <Link href="/login" className="font-medium text-primary underline underline-offset-4 hover:opacity-75 transition-opacity">
                   Fazer login
                 </Link>
               </p>
             </div>
-
           </CardContent>
         </Card>
         <p className="mt-6 text-center text-xs text-muted-foreground">GestorTrip v1.0</p>
