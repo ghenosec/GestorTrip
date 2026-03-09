@@ -177,51 +177,49 @@ Relatórios incluem:
 
 # 📁 Estrutura do Projeto
 
-
-gestortrip/
-│
+```
+GestorTrip/
 ├── app/
-│ ├── ativar/
-│ ├── login/
-│ ├── primeiro-acesso/
-│ ├── layout.tsx
-│ └── page.tsx
+│   ├── ativar/           # Tela de ativação de licença
+│   ├── login/            # Tela de login
+│   ├── primeiro-acesso/  # Cadastro inicial
+│   ├── layout.tsx
+│   └── page.tsx          # Shell principal da aplicação
 │
 ├── components/
-│ ├── ui/
-│ ├── dashboard.tsx
-│ ├── clientes.tsx
-│ ├── viagens.tsx
-│ ├── pagamentos.tsx
-│ ├── relatorio.tsx
-│ ├── configuracoes.tsx
-│ ├── pesquisa-rapida.tsx
-│ ├── update-banner.tsx
-│ ├── theme-toggle.tsx
-│ └── logo.tsx
+│   ├── ui/               # Componentes shadcn/ui
+│   ├── dashboard.tsx
+│   ├── clientes.tsx
+│   ├── viagens.tsx
+│   ├── pagamentos.tsx
+│   ├── update-banner.tsx # atualização automática
+│   ├── pesquisa-rapida.tsx
+│   ├── relatorio.tsx
+│   ├── configuracoes.tsx
+│   ├── logo.tsx          # Logo embutida em base64
+│   └── theme-toggle.tsx
 │
 ├── electron/
-│ ├── main.js
-│ ├── preload.js
-│ └── database.js
+│   ├── main.js           # Processo principal Electron
+│   ├── preload.js        # Bridge segura IPC
+│   └── database.js       # Operações SQLite
 │
 ├── lib/
-│ ├── store.tsx
-│ ├── data.ts
-│ └── electron.d.ts
+│   ├── store.tsx         # Contexto global de estado
+│   ├── data.ts           # Tipos e utilitários de dados
+│   └── electron.d.ts     # Tipagens da API Electron
+│
+├── license-api/          # Cloudflare Worker de licenças
+│   ├── src/index.js      # Worker com endpoint /activate
+│   ├── schema.sql        # Schema do banco D1
+│   └── wrangler.toml     # Configuração do Worker
 │
 ├── hooks/
 ├── styles/
 ├── public/
-│
-├── scripts/
-│ └── post-build.js
-│
-├── out/ # build estático do Next.js
-├── dist/ # instaladores gerados pelo electron-builder
-│
-└── package.json
-
+├── out/                  # Build estático Next.js (gerado)
+└── build/                # Instaladores Electron (gerado)
+```
 
 ---
 
