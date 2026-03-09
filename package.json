@@ -1,6 +1,7 @@
 {
   "name": "gestortrip",
-  "version": "1.0.0",
+  "version": "1.0.1",
+  "license_api_url": "https://gestortrip-licenses.gestortrip.workers.dev/activate",
   "private": true,
   "description": "Sistema de gestão de viagens",
   "author": "Ghenosec",
@@ -14,10 +15,10 @@
     "electron:build": "next build && node scripts/post-build.js && electron-builder"
   },
   "build": {
-    "appId": "com.gestortrip.app",
+    "appId": "com.ghenosec.gestortrip",
     "productName": "GestorTrip",
-    "icon": "favicon.ico",
     "asar": true,
+    "icon": "public/favicon.ico",
     "directories": {
       "output": "dist",
       "buildResources": "public"
@@ -28,21 +29,31 @@
       "node_modules/**/*",
       "package.json"
     ],
+    "publish": [
+      {
+        "provider": "generic",
+        "url": "https://pub-3f0f13db5d6349cf8cb11c0581ebbfc3.r2.dev"
+      }
+    ],
     "win": {
-      "target": "nsis",
-      "icon": "favicon.ico"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/favicon.ico"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": false,
+      "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "GestorTrip",
-      "installerHeaderIcon": "icon.ico",
-      "license": "license.txt",
       "unicode": true
     },
-    "extraResources": [],
     "npmRebuild": true
   },
   "dependencies": {
@@ -83,8 +94,11 @@
     "cmdk": "1.1.1",
     "date-fns": "4.1.0",
     "dotenv": "^17.3.1",
+    "electron-log": "^5.4.3",
     "electron-next": "^3.1.5",
+    "electron-updater": "^6.8.3",
     "embla-carousel-react": "8.6.0",
+    "exceljs": "^4.4.0",
     "input-otp": "1.4.2",
     "lucide-react": "^0.564.0",
     "next": "16.1.6",
