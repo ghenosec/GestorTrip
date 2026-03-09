@@ -109,6 +109,7 @@ GestorTrip/
 │   ├── clientes.tsx
 │   ├── viagens.tsx
 │   ├── pagamentos.tsx
+│   ├── update-banner.tsx # atualização automática
 │   ├── pesquisa-rapida.tsx
 │   ├── relatorio.tsx
 │   ├── configuracoes.tsx
@@ -169,12 +170,7 @@ Cada chave só pode ser ativada **uma vez** em um único dispositivo. Reativaç�
 - Dark / Light mode
 - Sistema de licenciamento com Cloudflare Workers + D1
 - Logo e identidade visual personalizada
-
-### 🔜 Próximas versões
-- [ ] Notificações de pagamentos vencendo
-- [ ] Múltiplos usuários por instalação
-- [ ] Exportação de dados em Excel
-- [ ] Histórico de alterações por registro
+- Exportação de dados em Excel
 
 ---
 
