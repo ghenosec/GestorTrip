@@ -1,11 +1,19 @@
 require("dotenv").config({ path: require("path").join(__dirname, "../.env.local") })
+
 const { app, BrowserWindow, ipcMain, nativeTheme, dialog } = require("electron")
 const path = require("path")
 const fs   = require("fs")
 const os   = require("os")
 const crypto = require("crypto")
+const { autoUpdater } = require("electron-updater")
+const ExcelJS = require("exceljs")
+const { Menu } = require("electron")
+Menu.setApplicationMenu(null)
 
-console.log("LICENSE_API_URL:", process.env.LICENSE_API_URL)
+autoUpdater.logger = require("electron-log")
+autoUpdater.logger.transports.file.level = "info"
+autoUpdater.autoDownload = true
+autoUpdater.autoInstallOnAppQuit = true
 
 let db
 let mainWindow
@@ -32,9 +40,9 @@ function isLicenseActivated() {
 
 function saveLicense(licenseKey) {
   const data = {
-    license:   licenseKey,
-    activated: true,
-    device:    getDeviceFingerprint(),
+    license:     licenseKey,
+    activated:   true,
+    device:      getDeviceFingerprint(),
     activatedAt: new Date().toISOString(),
   }
   fs.writeFileSync(getLicensePath(), JSON.stringify(data, null, 2))
@@ -56,11 +64,26 @@ function createWindow(htmlFile) {
     show: false,
   })
 
+    mainWindow.setMenuBarVisibility(false),
+    mainWindow.setAutoHideMenuBar(true),
+
   mainWindow.loadFile(path.join(__dirname, "../out", htmlFile))
 
   mainWindow.once("ready-to-show", () => {
     mainWindow.maximize()
     mainWindow.show()
+  })
+
+  mainWindow.webContents.once("did-finish-load", () => {
+    setTimeout(() => {
+      autoUpdater.checkForUpdates().catch(() => {})
+    }, 3000)
+  })
+
+  autoUpdater.on("update-downloaded", (info) => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send("update-downloaded", { version: info.version })
+    }
   })
 
   mainWindow.webContents.on("will-navigate", (event, targetUrl) => {
@@ -95,6 +118,10 @@ app.whenReady().then(() => {
   db = require("./database")
   const dbPath = db.getDbPath()
 
+  const LICENSE_API_URL =
+    process.env.LICENSE_API_URL ||
+    require("../package.json").license_api_url
+
   ipcMain.handle("theme:get", () =>
     nativeTheme.shouldUseDarkColors ? "dark" : "light"
   )
@@ -105,6 +132,10 @@ app.whenReady().then(() => {
   })
 
   const sessionPath = path.join(app.getPath("userData"), "session.json")
+
+  ipcMain.on("install-update", () => {
+    autoUpdater.quitAndInstall()
+  })
 
   ipcMain.handle("session:save", (_, user) => {
     try { fs.writeFileSync(sessionPath, JSON.stringify(user)) } catch {}
@@ -155,6 +186,75 @@ app.whenReady().then(() => {
     }
   })
 
+  ipcMain.handle("export:excel", async (_, { clientes, viagens, pagamentos }) => {
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      title:       "Exportar planilha Excel",
+      defaultPath: `GestorTrip_${new Date().toISOString().slice(0, 10)}.xlsx`,
+      filters:     [{ name: "Excel", extensions: ["xlsx"] }],
+    })
+
+    if (canceled || !filePath) return { canceled: true }
+
+    try {
+      const wb = new ExcelJS.Workbook()
+      wb.creator = "GestorTrip"
+      wb.created = new Date()
+
+      const headerStyle = {
+        font:      { bold: true, color: { argb: "FFFFFFFF" } },
+        fill:      { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E3A5F" } },
+        alignment: { horizontal: "center", vertical: "middle" },
+        border:    { bottom: { style: "thin", color: { argb: "FF1E3A5F" } } },
+      }
+
+      function buildSheet(workbook, name, rows) {
+        const ws = workbook.addWorksheet(name)
+        if (!rows || rows.length === 0) { ws.addRow(["Sem dados"]); return }
+        const keys = Object.keys(rows[0])
+        ws.columns = keys.map((k) => ({
+          header: k,
+          key:    k,
+          width:  Math.max(k.length + 4, 16),
+        }))
+        const headerRow = ws.getRow(1)
+        headerRow.height = 22
+        keys.forEach((_, i) => {
+          const cell = headerRow.getCell(i + 1)
+          cell.font      = headerStyle.font
+          cell.fill      = headerStyle.fill
+          cell.alignment = headerStyle.alignment
+          cell.border    = headerStyle.border
+        })
+        rows.forEach((row, ri) => {
+          const dataRow = ws.addRow(row)
+          dataRow.height = 18
+          if (ri % 2 === 1) {
+            dataRow.eachCell((cell) => {
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F7FA" } }
+            })
+          }
+        })
+        ws.columns.forEach((col) => {
+          let maxLen = col.header?.length ?? 10
+          col.eachCell({ includeEmpty: false }, (cell) => {
+            const len = cell.value ? String(cell.value).length : 0
+            if (len > maxLen) maxLen = len
+          })
+          col.width = Math.min(maxLen + 4, 50)
+        })
+      }
+
+      buildSheet(wb, "Clientes",   clientes)
+      buildSheet(wb, "Viagens",    viagens)
+      buildSheet(wb, "Pagamentos", pagamentos)
+
+      await wb.xlsx.writeFile(filePath)
+      return { success: true }
+    } catch (e) {
+      return { success: false, error: e.message }
+    }
+  })
+
   ipcMain.handle("relatorio:gerar", async (_, htmlContent) => {
     const { canceled, filePath: destPath } = await dialog.showSaveDialog(mainWindow, {
       title: "Salvar Relatório PDF",
@@ -200,62 +300,60 @@ app.whenReady().then(() => {
 
   ipcMain.handle("license:check", () => isLicenseActivated())
 
-ipcMain.handle("license:activate", async (_, licenseKey) => {
-  const device = getDeviceFingerprint()
+  ipcMain.handle("license:activate", async (_, licenseKey) => {
+    const device = getDeviceFingerprint()
 
-  if (!/^GT-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(licenseKey)) {
-    return { success: false, message: "Formato de chave inválido." }
-  }
+    if (!/^GT-[A-Z0-9]{5}-[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(licenseKey)) {
+      return { success: false, message: "Formato de chave inválido." }
+    }
 
-  const API_URL = "https://gestortrip-licenses.gestortrip.workers.dev/activate"
+    if (!LICENSE_API_URL) {
+      console.error("LICENSE_API_URL não definida")
+      return { success: false, message: "Configuração do servidor ausente. Contate o suporte." }
+    }
 
-  return new Promise((resolve) => {
-    const { net } = require("electron")
-    const request = net.request({
-      method: "POST",
-      url: API_URL,
-    })
+    return new Promise((resolve) => {
+      const { net } = require("electron")
+      const request = net.request({ method: "POST", url: LICENSE_API_URL })
 
-    request.setHeader("Content-Type", "application/json")
+      request.setHeader("Content-Type", "application/json")
 
-    let body = ""
-    request.on("response", (response) => {
-      response.on("data", (chunk) => { body += chunk.toString() })
-      response.on("end", () => {
-        try {
-          const data = JSON.parse(body)
-          console.log("API response:", data)
-
-          if (data.status === "success") {
-            saveLicense(licenseKey)
-            resolve({ success: true })
-          } else {
-            const msgs = {
-              invalid_license:      "Chave de licença inválida.",
-              license_already_used: "Esta chave já foi utilizada em outro dispositivo.",
-              invalid_device:       "Erro ao identificar o dispositivo.",
+      let body = ""
+      request.on("response", (response) => {
+        response.on("data", (chunk) => { body += chunk.toString() })
+        response.on("end", () => {
+          try {
+            const data = JSON.parse(body)
+            if (data.status === "success") {
+              saveLicense(licenseKey)
+              resolve({ success: true })
+            } else {
+              const msgs = {
+                invalid_license:      "Chave de licença inválida.",
+                license_already_used: "Esta chave já foi utilizada em outro dispositivo.",
+                invalid_device:       "Erro ao identificar o dispositivo.",
+              }
+              resolve({
+                success: false,
+                message: msgs[data.message] ?? "Erro ao ativar licença. Tente novamente.",
+              })
             }
-            resolve({
-              success: false,
-              message: msgs[data.message] ?? "Erro ao ativar licença. Tente novamente.",
-            })
+          } catch (e) {
+            console.error("Parse error:", e.message, "body:", body)
+            resolve({ success: false, message: "Resposta inválida do servidor." })
           }
-        } catch (e) {
-          console.error("Parse error:", e.message, "body:", body)
-          resolve({ success: false, message: "Resposta inválida do servidor." })
-        }
+        })
       })
-    })
 
-    request.on("error", (e) => {
-      console.error("net.request error:", e.message)
-      resolve({ success: false, message: "Não foi possível conectar ao servidor de licenças. Verifique sua conexão." })
-    })
+      request.on("error", (e) => {
+        console.error("net.request error:", e.message)
+        resolve({ success: false, message: "Não foi possível conectar ao servidor de licenças." })
+      })
 
-    request.write(JSON.stringify({ license: licenseKey, device }))
-    request.end()
+      request.write(JSON.stringify({ license: licenseKey, device }))
+      request.end()
+    })
   })
-})
 
   ipcMain.handle("auth:isFirstAccess", () => db.isFirstAccess())
   ipcMain.handle("auth:register", (_, email, pass) => db.registerUser(email, pass))
