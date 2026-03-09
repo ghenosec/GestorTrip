@@ -1,191 +1,281 @@
 # ✈️ GestorTrip
 
-Sistema para **gerenciamento de viagens**, desenvolvido com **Next.js + TypeScript + Electron**, focado em organização, controle financeiro e visualização estratégica de dados com experiência moderna de usuário.
+Sistema desktop para **gerenciamento completo de viagens**, desenvolvido com **Next.js + TypeScript + Electron**, focado em organização, controle financeiro e visualização estratégica de dados.
 
-Aplicação desktop com funcionamento **100% offline** após ativação, banco de dados local e arquitetura moderna baseada no ecossistema React.
-
----
-
-## 📌 Sobre o Projeto
-
-O **GestorTrip** é uma aplicação desktop para agências e organizadores de viagens, permitindo gerenciar clientes, viagens, pagamentos e gerar relatórios completos em PDF — tudo de forma local, sem depender de internet no dia a dia.
-
-O projeto foi desenvolvido com foco em:
-
-- ⚡ Alta performance e resposta imediata
-- 🧠 Organização e visualização inteligente de dados
-- 🎨 Interface moderna com suporte a Dark/Light mode
-- 🔒 Tipagem forte com TypeScript
-- 🧩 Componentização reutilizável
-- 💻 Aplicação Desktop via Electron
-- 📴 Funcionamento 100% Offline após ativação
-- 🔑 Sistema de licenciamento por chave de ativação
-
-Atualmente o projeto está em fase de **MVP funcional**.
+A aplicação funciona **100% offline após ativação**, utilizando banco de dados local **SQLite** e arquitetura moderna baseada no ecossistema **React**.
 
 ---
 
-## 🚀 Stacks
+# 📌 Sobre o Projeto
 
-### 🖥️ Frontend
-- **Next.js** — framework React com export estático
-- **React**
+O **GestorTrip** é uma aplicação desktop voltada para **agências de turismo, organizadores de excursões e gestores de viagens**, permitindo controlar clientes, viagens e pagamentos de forma simples e centralizada.
+
+O sistema foi projetado para funcionar **localmente**, garantindo:
+
+- ⚡ Alta performance  
+- 📴 Funcionamento offline  
+- 🗄️ Banco de dados local seguro  
+- 🎨 Interface moderna  
+- 🔒 Tipagem forte com TypeScript  
+- 🧩 Arquitetura modular baseada em componentes  
+- 💻 Distribuição como aplicativo desktop  
+
+O projeto está atualmente em **fase de MVP funcional**.
+
+---
+
+# 🚀 Stacks Utilizadas
+
+## 🖥️ Frontend
+
+- **Next.js 16**
+- **React 19**
 - **TypeScript**
-- **Tailwind CSS** — estilização utilitária
-- **shadcn/ui + Radix UI** — componentes acessíveis
-- **Recharts** — gráficos e visualização de dados
-- **next-themes** — suporte a Dark/Light mode
-- **date-fns** — manipulação de datas
-- **Zod** — validação de esquemas
-- **clsx + tailwind-merge** — utilitários de classe
-
-### 🗄️ Banco de Dados
-- **SQLite** via **better-sqlite3** — banco local, sem servidor
-
-### 🖥️ Desktop
-- **Electron** — empacotamento como aplicação nativa
-- **electron-builder** — geração de instaladores (.exe, .dmg)
-
-### ☁️ Licenciamento
-- **Cloudflare Workers** — API de ativação de licenças
-- **Cloudflare D1** — banco de dados de licenças (SQLite na nuvem)
+- **TailwindCSS 4**
+- **shadcn/ui**
+- **Radix UI**
+- **React Hook Form**
+- **Zod**
+- **date-fns**
+- **Recharts**
+- **Lucide Icons**
+- **Sonner (toast notifications)**
+- **next-themes** (Dark / Light mode)
+- **clsx + tailwind-merge**
 
 ---
 
-## 🧠 Funcionalidades
+## 🗄️ Banco de Dados
 
-### Clientes
-- ✅ Cadastro completo com CPF, telefone e endereço
-- ✅ Vinculação de clientes a viagens
-- ✅ Controle de status (pago / pendente)
-- ✅ Busca e pesquisa rápida
+- **SQLite**
+- **better-sqlite3**
 
-### Viagens
-- ✅ Cadastro de viagens com destino, datas e valor por pessoa
-- ✅ Controle de status (ativa / finalizada)
-- ✅ Vinculação automática de clientes e pagamentos
-- ✅ Exclusão em cascata com preservação de histórico financeiro
-
-### Pagamentos
-- ✅ Registro de pagamentos parcelados ou totais
-- ✅ Histórico completo por cliente com forma de pagamento (PIX, Cartão, Dinheiro, Transferência)
-- ✅ Cálculo automático de valor pago e valor pendente
-- ✅ Exclusão de registros de pagamento
-
-### Dashboard
-- ✅ KPIs em tempo real (total de clientes, viagens, receita)
-- ✅ Gráfico de receita por viagem (total esperado vs recebido)
-- ✅ Indicadores de inadimplência e taxa de recebimento
-
-### Relatórios
-- ✅ Exportação de relatórios em PDF
-- ✅ Filtros por período: mensal, trimestral, semestral e anual
-- ✅ Relatório com capa, KPIs, tabela de viagens e tabela de clientes
-- ✅ Gerado localmente via Electron (sem dependência de serviço externo)
-
-### Sistema
-- ✅ Login com sessão persistente ("manter conectado")
-- ✅ Suporte a Dark / Light mode
-- ✅ Backup e restauração do banco de dados
-- ✅ Sistema de licença por chave de ativação (uso único por dispositivo)
-- ✅ Ativação online com funcionamento offline após primeiro acesso
+Banco de dados totalmente **local**, sem necessidade de servidor.
 
 ---
 
-## 📁 Estrutura do Projeto
+## 🖥️ Desktop
 
-```
-GestorTrip/
+- **Electron**
+- **electron-builder**
+- **electron-updater**
+- **electron-log**
+
+Permite gerar instaladores nativos para **Windows**.
+
+---
+
+## 📊 Exportação de Dados
+
+- **ExcelJS**
+
+Exportação de relatórios e dados em **.xlsx** para Excel.
+
+---
+
+## ☁️ Licenciamento
+
+- **Cloudflare Workers** — API de ativação de licenças  
+- **Cloudflare D1** — banco de dados de licenças
+
+---
+
+## 🔄 Atualizações Automáticas
+
+- **electron-updater**
+- **Cloudflare R2 Object Storage**
+
+Permite atualização automática do aplicativo quando o usuário estiver conectado à internet.
+
+---
+
+# 🧠 Funcionalidades
+
+## 👥 Clientes
+
+- Cadastro completo de clientes  
+- CPF, telefone e endereço  
+- Vinculação a viagens  
+- Controle de pagamento  
+- Busca rápida  
+
+---
+
+## ✈️ Viagens
+
+- Cadastro de viagens  
+- Destino e datas  
+- Valor por pessoa  
+- Status da viagem  
+- Vinculação automática de clientes  
+
+---
+
+## 💰 Pagamentos
+
+- Registro de pagamentos  
+- Pagamentos parciais ou totais  
+- Histórico por cliente  
+- Formas de pagamento:
+  - PIX  
+  - Cartão  
+  - Dinheiro  
+  - Transferência  
+
+- Cálculo automático de:
+  - valor pago  
+  - valor pendente  
+
+---
+
+## 📊 Dashboard
+
+Indicadores em tempo real:
+
+- Total de clientes  
+- Total de viagens  
+- Receita esperada  
+- Receita recebida  
+- Taxa de inadimplência  
+
+Gráficos com **Recharts** para análise visual.
+
+---
+
+## 📑 Relatórios
+
+- Exportação em **PDF**
+- Exportação em **Excel (.xlsx)**
+
+Filtros por período:
+
+- Mensal  
+- Trimestral  
+- Semestral  
+- Anual  
+
+Relatórios incluem:
+
+- KPIs  
+- Tabela de viagens  
+- Tabela de clientes  
+- Indicadores financeiros  
+
+---
+
+## ⚙️ Sistema
+
+- Login com sessão persistente  
+- Dark / Light mode  
+- Backup do banco de dados  
+- Restauração de backup  
+- Sistema de licenciamento por chave  
+- Funcionamento offline após ativação  
+- Atualizações automáticas  
+
+---
+
+# 📁 Estrutura do Projeto
+
+
+gestortrip/
+│
 ├── app/
-│   ├── ativar/           # Tela de ativação de licença
-│   ├── login/            # Tela de login
-│   ├── primeiro-acesso/  # Cadastro inicial
-│   ├── layout.tsx
-│   └── page.tsx          # Shell principal da aplicação
+│ ├── ativar/
+│ ├── login/
+│ ├── primeiro-acesso/
+│ ├── layout.tsx
+│ └── page.tsx
 │
 ├── components/
-│   ├── ui/               # Componentes shadcn/ui
-│   ├── dashboard.tsx
-│   ├── clientes.tsx
-│   ├── viagens.tsx
-│   ├── pagamentos.tsx
-│   ├── update-banner.tsx # atualização automática
-│   ├── pesquisa-rapida.tsx
-│   ├── relatorio.tsx
-│   ├── configuracoes.tsx
-│   ├── logo.tsx          # Logo embutida em base64
-│   └── theme-toggle.tsx
+│ ├── ui/
+│ ├── dashboard.tsx
+│ ├── clientes.tsx
+│ ├── viagens.tsx
+│ ├── pagamentos.tsx
+│ ├── relatorio.tsx
+│ ├── configuracoes.tsx
+│ ├── pesquisa-rapida.tsx
+│ ├── update-banner.tsx
+│ ├── theme-toggle.tsx
+│ └── logo.tsx
 │
 ├── electron/
-│   ├── main.js           # Processo principal Electron
-│   ├── preload.js        # Bridge segura IPC
-│   └── database.js       # Operações SQLite
+│ ├── main.js
+│ ├── preload.js
+│ └── database.js
 │
 ├── lib/
-│   ├── store.tsx         # Contexto global de estado
-│   ├── data.ts           # Tipos e utilitários de dados
-│   └── electron.d.ts     # Tipagens da API Electron
-│
-├── license-api/          # Cloudflare Worker de licenças
-│   ├── src/index.js      # Worker com endpoint /activate
-│   ├── schema.sql        # Schema do banco D1
-│   └── wrangler.toml     # Configuração do Worker
+│ ├── store.tsx
+│ ├── data.ts
+│ └── electron.d.ts
 │
 ├── hooks/
 ├── styles/
 ├── public/
-├── out/                  # Build estático Next.js (gerado)
-└── build/                # Instaladores Electron (gerado)
-```
+│
+├── scripts/
+│ └── post-build.js
+│
+├── out/ # build estático do Next.js
+├── dist/ # instaladores gerados pelo electron-builder
+│
+└── package.json
+
 
 ---
 
-## 🔑 Sistema de Licenciamento
+# 🔑 Sistema de Licenciamento
 
-O GestorTrip utiliza um sistema de ativação por chave única no formato `GT-XXXXX-XXXXX-XXXXX`.
+O GestorTrip utiliza ativação por chave única no formato: `GT-XXXXX-XXXXX-XXXXX`.
 
-**Fluxo de ativação:**
-1. Cliente instala o app e abre pela primeira vez
-2. App verifica se existe `license.json` em `AppData/Roaming/GestorTrip/`
-3. Se não existir, exibe a tela de ativação
-4. Cliente insere a chave — app valida online via Cloudflare Workers
-5. Chave válida → `license.json` é salvo localmente
-6. A partir daí, o app funciona **100% offline**
+### Fluxo de ativação
 
-Cada chave só pode ser ativada **uma vez** em um único dispositivo. Reativação no mesmo dispositivo é permitida (para reinstalações).
+1. Usuário instala o aplicativo  
+2. Ao abrir pela primeira vez, o sistema verifica `license.json`  
+3. Caso não exista, abre tela de ativação  
+4. Usuário insere a chave  
+5. App valida via **Cloudflare Worker**  
+6. Se válida, salva licença localmente  
 
----
+Após ativação, o sistema passa a funcionar **totalmente offline**.
 
-## 🛣️ Roadmap
-
-### ✅ Concluído
-- Estrutura base com Next.js + TypeScript
-- Banco de dados SQLite local com better-sqlite3
-- Sistema de autenticação com sessão persistente
-- CRUD completo de Clientes, Viagens e Pagamentos
-- Dashboard com KPIs e gráficos
-- Exportação de relatórios em PDF (mensal, trimestral, semestral, anual)
-- Migração de PWA para aplicação Desktop com Electron
-- Backup e restauração do banco de dados
-- Dark / Light mode
-- Sistema de licenciamento com Cloudflare Workers + D1
-- Logo e identidade visual personalizada
-- Exportação de dados em Excel
+Cada chave pode ser ativada **apenas em um dispositivo**.
+Trocou de computador? Só requisitar outra chave e importar o banco de dados.
 
 ---
 
-## 👨‍💻 Autor
+# 🛣️ Roadmap
+
+## ✅ Concluído
+
+- Next.js + TypeScript  
+- Banco SQLite local  
+- CRUD completo de clientes, viagens e pagamentos  
+- Dashboard com gráficos  
+- Exportação de relatórios  
+- Aplicação Desktop com Electron  
+- Backup e restauração de dados  
+- Dark / Light mode  
+- Sistema de licenciamento  
+- Atualização automática  
+- Estrutura modular de componentes  
+
+---
+
+# 👨‍💻 Autor
 
 Desenvolvido por **ghenosec**.
 
-Projeto prático utilizando arquitetura moderna com Next.js + Electron, com foco em experiência de usuário e robustez de dados para uso profissional.
+Projeto focado em arquitetura moderna utilizando **Next.js + Electron**, com objetivo de criar uma solução robusta e profissional para gestão de viagens.
 
 ---
 
-## 📄 Licença
+# 📄 Licença
 
-Este é um software proprietário. Todos os direitos reservados.  
-Uso, reprodução ou distribuição não autorizados são estritamente proibidos.
+Este software é **proprietário**.
 
-> This project is proprietary software. All rights reserved.  
-> Unauthorized use, reproduction, or distribution is strictly prohibited.
+Todos os direitos reservados.  
+É proibida a reprodução, distribuição ou modificação sem autorização do autor.
+
+© GestorTrip — All Rights Reserved
