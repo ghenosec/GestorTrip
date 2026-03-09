@@ -4,16 +4,19 @@ import { useState } from "react"
 import { useStore } from "@/lib/store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, Upload, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { Download, Upload, CheckCircle2, AlertCircle, Loader2, FileSpreadsheet } from "lucide-react"
 
 type Status = { type: "success" | "error"; message: string } | null
 
 export function Configuracoes() {
-  const { reloadAll } = useStore()
-  const [exportStatus, setExportStatus] = useState<Status>(null)
-  const [importStatus, setImportStatus] = useState<Status>(null)
-  const [exporting, setExporting]       = useState(false)
-  const [importing, setImporting]       = useState(false)
+  const { reloadAll, clientes, viagens, pagamentos } = useStore()
+
+  const [exportStatus,  setExportStatus]  = useState<Status>(null)
+  const [importStatus,  setImportStatus]  = useState<Status>(null)
+  const [excelStatus,   setExcelStatus]   = useState<Status>(null)
+  const [exporting,     setExporting]     = useState(false)
+  const [importing,     setImporting]     = useState(false)
+  const [exportingXlsx, setExportingXlsx] = useState(false)
 
   async function handleExport() {
     setExporting(true)
@@ -21,11 +24,11 @@ export function Configuracoes() {
     try {
       const result = await window.electronAPI.exportDb()
       if (result.canceled) { setExporting(false); return }
-      if (result.success) {
-        setExportStatus({ type: "success", message: "Backup salvo com sucesso." })
-      } else {
-        setExportStatus({ type: "error", message: result.error ?? "Erro ao exportar." })
-      }
+      setExportStatus(
+        result.success
+          ? { type: "success", message: "Backup salvo com sucesso." }
+          : { type: "error",   message: result.error ?? "Erro ao exportar." }
+      )
     } catch {
       setExportStatus({ type: "error", message: "Erro inesperado ao exportar." })
     } finally {
@@ -49,6 +52,77 @@ export function Configuracoes() {
       setImportStatus({ type: "error", message: "Erro inesperado ao importar." })
     } finally {
       setImporting(false)
+    }
+  }
+
+  async function handleExportExcel() {
+    setExportingXlsx(true)
+    setExcelStatus(null)
+    try {
+      const clientesData = clientes.map((c) => ({
+        "Nome Completo":    c.nomeCompleto,
+        "CPF":              c.cpf,
+        "RG":               c.rg,
+        "Data Nascimento":  c.dataNascimento,
+        "Telefone":         c.telefone,
+        "Email":            c.email,
+        "Endereço":         c.endereco,
+        "Observações":      c.observacoes,
+        "Status":           c.status,
+      }))
+
+      const viagensData = viagens.map((v) => ({
+        "Nome":             v.nome,
+        "Destino":          v.destino,
+        "Data Ida":         v.dataIda,
+        "Data Volta":       v.dataVolta,
+        "Valor por Pessoa": v.valorPorPessoa,
+        "Status":           v.status,
+        "Clientes":         clientes.filter((c) => c.viagemId === v.id).length,
+      }))
+
+      const pagamentosData = pagamentos.flatMap((p) => {
+        const cliente = clientes.find((c) => c.id === p.clienteId)
+        const viagem  = viagens.find((v) => v.id === p.viagemId)
+        if (p.historico.length === 0) {
+          return [{
+            "Cliente":         cliente?.nomeCompleto ?? p.clienteId,
+            "Viagem":          viagem?.destino       ?? p.viagemId,
+            "Valor Total":     p.valorTotal,
+            "Valor":           0,
+            "Forma Pagamento": "-",
+            "Data":            "-",
+            "Observação":      "",
+          }]
+        }
+        return p.historico.map((h) => ({
+          "Cliente":         cliente?.nomeCompleto ?? p.clienteId,
+          "Viagem":          viagem?.destino       ?? p.viagemId,
+          "Valor Total":     p.valorTotal,
+          "Valor":           h.valor,
+          "Forma Pagamento": h.formaPagamento,
+          "Data":            h.data,
+          "Observação":      h.observacao ?? "",
+        }))
+      })
+
+      const result = await window.electronAPI.exportExcel({
+        clientes:   clientesData,
+        viagens:    viagensData,
+        pagamentos: pagamentosData,
+      })
+
+      if (result.canceled) { setExportingXlsx(false); return }
+      setExcelStatus(
+        result.success
+          ? { type: "success", message: "Planilha Excel exportada com sucesso!" }
+          : { type: "error",   message: result.error ?? "Erro ao exportar Excel." }
+      )
+    } catch (e) {
+      console.error("EXCEL ERROR:", e)
+      setExcelStatus({ type: "error", message: "Erro inesperado ao gerar Excel." })
+    } finally {
+      setExportingXlsx(false)
     }
   }
 
@@ -80,24 +154,11 @@ export function Configuracoes() {
                 Exportar
               </Button>
             </div>
-            {exportStatus && (
-              <div className={`flex items-start gap-2 rounded-md border px-3 py-2 text-xs ${
-                exportStatus.type === "success"
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                  : "border-destructive/30 bg-destructive/5 text-destructive"
-              }`}>
-                {exportStatus.type === "success"
-                  ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                  : <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                }
-                {exportStatus.message}
-              </div>
-            )}
+            {exportStatus && <StatusMessage status={exportStatus} />}
           </div>
 
           <div className="border-t" />
 
-          {/* Importar */}
           <div className="flex flex-col gap-2">
             <div className="flex items-center justify-between">
               <div>
@@ -111,19 +172,35 @@ export function Configuracoes() {
                 Importar
               </Button>
             </div>
-            {importStatus && (
-              <div className={`flex items-start gap-2 rounded-md border px-3 py-2 text-xs ${
-                importStatus.type === "success"
-                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-                  : "border-destructive/30 bg-destructive/5 text-destructive"
-              }`}>
-                {importStatus.type === "success"
-                  ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                  : <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                }
-                {importStatus.message}
+            {importStatus && <StatusMessage status={importStatus} />}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium">Exportar para Excel</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Gera uma planilha <strong>.xlsx</strong> com três abas: <em>Clientes</em>, <em>Viagens</em> e <em>Pagamentos</em>.
+            Útil para análises externas ou compartilhamento.
+          </p>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Exportar planilha completa</p>
+                <p className="text-xs text-muted-foreground">Clientes, Viagens e Pagamentos em abas separadas</p>
               </div>
-            )}
+              <Button size="sm" variant="outline" onClick={handleExportExcel} disabled={exportingXlsx} className="shrink-0 gap-2">
+                {exportingXlsx
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <FileSpreadsheet className="h-3.5 w-3.5" />
+                }
+                Exportar Excel
+              </Button>
+            </div>
+            {excelStatus && <StatusMessage status={excelStatus} />}
           </div>
         </CardContent>
       </Card>
@@ -146,6 +223,22 @@ export function Configuracoes() {
           </p>
         </CardContent>
       </Card>
+    </div>
+  )
+}
+
+function StatusMessage({ status }: { status: { type: "success" | "error"; message: string } }) {
+  return (
+    <div className={`flex items-start gap-2 rounded-md border px-3 py-2 text-xs ${
+      status.type === "success"
+        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
+        : "border-destructive/30 bg-destructive/5 text-destructive"
+    }`}>
+      {status.type === "success"
+        ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+        : <AlertCircle  className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+      }
+      {status.message}
     </div>
   )
 }
