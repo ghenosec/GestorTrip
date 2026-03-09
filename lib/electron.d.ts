@@ -3,6 +3,16 @@ export {}
 declare global {
   interface Window {
     electronAPI: {
+
+    exportExcel: (data: {
+      clientes:   Record<string, unknown>[]
+      viagens:    Record<string, unknown>[]
+      pagamentos: Record<string, unknown>[]
+      }) => Promise<{ success?: boolean; canceled?: boolean; error?: string }>
+
+onUpdateDownloaded: (cb: (info: { version: string }) => void) => void
+installUpdate: () => void
+
       checkLicense:    () => Promise<boolean>
       activateLicense: (licenseKey: string) => Promise<{ success: boolean; message?: string }>
 
