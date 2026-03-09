@@ -17,6 +17,7 @@ wrangler.toml
 # Electron build
 dist/
 release/
+out/
 
 # Variáveis de ambiente
 .env
