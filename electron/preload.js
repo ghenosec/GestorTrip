@@ -1,6 +1,11 @@
 const { contextBridge, ipcRenderer } = require("electron")
 
+
 contextBridge.exposeInMainWorld("electronAPI", {
+  
+  onUpdateDownloaded: (cb) =>
+    ipcRenderer.on("update-downloaded", (_, info) => cb(info)),
+  installUpdate: () => ipcRenderer.send("install-update"),
 
   checkLicense:    ()           => ipcRenderer.invoke("license:check"),
   activateLicense: (licenseKey) => ipcRenderer.invoke("license:activate", licenseKey),
@@ -18,6 +23,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   exportDb: () => ipcRenderer.invoke("db:export"),
   importDb: () => ipcRenderer.invoke("db:import"),
+  exportExcel: (data) => ipcRenderer.invoke("export:excel", data),
 
   gerarRelatorio: (htmlContent) => ipcRenderer.invoke("relatorio:gerar", htmlContent),
 
