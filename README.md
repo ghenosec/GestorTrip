@@ -1,10 +1,14 @@
-# ✈️ GestorTrip
+# 🌎⚙ GestorTrip
 
 Sistema desktop para **gerenciamento completo de viagens**, desenvolvido com **Next.js + TypeScript + Electron**, focado em organização, controle financeiro e visualização estratégica de dados.
 
 A aplicação funciona **100% offline após ativação**, utilizando banco de dados local **SQLite** e arquitetura moderna baseada no ecossistema **React**.
 
 ---
+
+# ⬇ Download
+
+O Download é de livre acesso, porém, para utilizar o programa, necessita-se de uma licença, sendo assim necessário realizar a compra do chave. Para mais detalhes, veja a landing page do [GestorTrip](https://gestortrip.vercel.app/)
 
 # 📌 Sobre o Projeto
 
@@ -19,8 +23,6 @@ O sistema foi projetado para funcionar **localmente**, garantindo:
 - 🔒 Tipagem forte com TypeScript  
 - 🧩 Arquitetura modular baseada em componentes  
 - 💻 Distribuição como aplicativo desktop  
-
-O projeto está atualmente em **fase de MVP funcional**.
 
 ---
 
@@ -69,7 +71,7 @@ Permite gerar instaladores nativos para **Windows**.
 
 - **ExcelJS**
 
-Exportação de relatórios e dados em **.xlsx** para Excel.
+Exportação de dados em **.xlsx** para Excel.
 
 ---
 
@@ -145,7 +147,6 @@ Gráficos com **Recharts** para análise visual.
 ## 📑 Relatórios
 
 - Exportação em **PDF**
-- Exportação em **Excel (.xlsx)**
 
 Filtros por período:
 
