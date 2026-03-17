@@ -27,6 +27,9 @@ interface StoreContextType {
   getViagemById: (viagemId: string) => Viagem | undefined
   getClienteById: (clienteId: string) => Cliente | undefined
   reloadAll: () => Promise<void>
+  openFichaCliente: (clienteId: string) => void
+  fichaClienteId: string | null
+  closeFichaCliente: () => void
 }
 
 function getUserId(): number {
@@ -53,7 +56,7 @@ function rowToCliente(row: Record<string, unknown>): Cliente {
     endereco: String(row.endereco ?? ""),
     observacoes: String(row.observacoes ?? ""),
     viagemId: row.viagem_id ? String(row.viagem_id) : null,
-    status: (row.status as "pago" | "pendente") ?? "pendente",
+    status: (row.status as "pago" | "pendente" | "a_confirmar") ?? "a_confirmar",
   }
 }
 
@@ -65,6 +68,7 @@ function rowToViagem(row: Record<string, unknown>): Viagem {
     dataIda: String(row.data_ida ?? ""),
     dataVolta: String(row.data_volta ?? ""),
     valorPorPessoa: Number(row.valor_por_pessoa ?? 0),
+    capacidade: Number(row.capacidade ?? 0),
     status: (row.status as "ativa" | "finalizada") ?? "ativa",
   }
 }
@@ -103,6 +107,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([])
   const [loading, setLoading]       = useState(true)
   const [activeSection, setActiveSection] = useState("dashboard")
+  const [fichaClienteId, setFichaClienteId] = useState<string | null>(null)
+
+  const openFichaCliente  = useCallback((id: string) => setFichaClienteId(id), [])
+  const closeFichaCliente = useCallback(() => setFichaClienteId(null), [])
 
   const reloadAll = useCallback(async () => {
     const userId = getUserId()
@@ -186,7 +194,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!hasElectron()) { setViagens((prev) => [...prev, { ...data, id: generateId() }]); return }
     await window.electronAPI.createViagem(userId, {
       nome: data.nome, destino: data.destino, data_ida: data.dataIda,
-      data_volta: data.dataVolta, valor_por_pessoa: data.valorPorPessoa, status: data.status,
+      data_volta: data.dataVolta, valor_por_pessoa: data.valorPorPessoa,
+      capacidade: data.capacidade ?? 0, status: data.status,
     })
     await reloadAll()
   }, [reloadAll])
@@ -194,17 +203,34 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const updateViagem = useCallback(async (id: string, data: Partial<Viagem>) => {
     const userId = getUserId()
     if (!hasElectron()) {
-      setViagens((prev) => prev.map((v) => (v.id === id ? { ...v, ...data } : v))); return
+      setViagens((prev) => prev.map((v) => (v.id === id ? { ...v, ...data } : v)))
+      if (data.status === "ativa") {
+        setClientes((prev) => prev.map((c) =>
+          c.viagemId === id && c.status === "pago"
+            ? { ...c, status: "a_confirmar" as const }
+            : c
+        ))
+      }
+      return
     }
     const atual = viagens.find((v) => v.id === id)
     if (!atual) return
     const merged = { ...atual, ...data }
     await window.electronAPI.updateViagem(Number(id), userId, {
       nome: merged.nome, destino: merged.destino, data_ida: merged.dataIda,
-      data_volta: merged.dataVolta, valor_por_pessoa: merged.valorPorPessoa, status: merged.status,
+      data_volta: merged.dataVolta, valor_por_pessoa: merged.valorPorPessoa,
+      capacidade: merged.capacidade ?? 0, status: merged.status,
     })
+    if (data.status === "ativa" && atual.status !== "ativa") {
+      const clientesDaViagem = clientes.filter(
+        (c) => c.viagemId === id && c.status === "pago"
+      )
+      for (const c of clientesDaViagem) {
+        await window.electronAPI.updateCliente(Number(c.id), userId, { status: "a_confirmar" })
+      }
+    }
     await reloadAll()
-  }, [viagens, reloadAll])
+  }, [viagens, clientes, reloadAll])
 
   const deleteViagem = useCallback(async (id: string) => {
     const userId = getUserId()
@@ -291,6 +317,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addPagamento, addPagamentoHistorico, deletePagamento,
     getClientesByViagem, getPagamentoByCliente, getViagemById, getClienteById,
     reloadAll,
+    openFichaCliente, fichaClienteId, closeFichaCliente,
   }), [
     clientes, viagens, pagamentos, loading, activeSection,
     addCliente, updateCliente, deleteCliente,
@@ -298,6 +325,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addPagamento, addPagamentoHistorico, deletePagamento,
     getClientesByViagem, getPagamentoByCliente, getViagemById, getClienteById,
     reloadAll,
+    openFichaCliente, fichaClienteId, closeFichaCliente,
   ])
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>
