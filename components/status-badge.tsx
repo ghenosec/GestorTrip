@@ -3,14 +3,27 @@
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 
+type ClienteStatus = "pago" | "pendente" | "a_confirmar"
+
 interface StatusBadgeProps {
-  status: "pago" | "pendente"
+  status: ClienteStatus
   className?: string
   onClick?: () => void
 }
 
 export function StatusBadge({ status, className, onClick }: StatusBadgeProps) {
   const isClickable = !!onClick
+
+  const styles: Record<ClienteStatus, string> = {
+    pago:         "bg-emerald-100 text-emerald-800 hover:bg-emerald-200",
+    pendente:     "bg-amber-100 text-amber-800 hover:bg-amber-200",
+    a_confirmar:  "bg-slate-100 text-slate-600 hover:bg-slate-200",
+  }
+  const labels: Record<ClienteStatus, string> = {
+    pago:        "Pago",
+    pendente:    "Pendente",
+    a_confirmar: "A confirmar",
+  }
 
   return (
     <Badge
@@ -30,14 +43,12 @@ export function StatusBadge({ status, className, onClick }: StatusBadgeProps) {
       }
       className={cn(
         "font-medium text-xs",
-        status === "pago"
-          ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200"
-          : "bg-amber-100 text-amber-800 hover:bg-amber-200",
+        styles[status] ?? styles.a_confirmar,
         isClickable && "cursor-pointer select-none transition-colors",
         className
       )}
     >
-      {status === "pago" ? "Pago" : "Pendente"}
+      {labels[status] ?? "A confirmar"}
     </Badge>
   )
 }
