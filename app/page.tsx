@@ -180,7 +180,6 @@ function AppLayout() {
         }
       `}</style>
 
-      {/* ── SIDEBAR ── */}
       <aside
         className="gt-sidebar"
         style={{
@@ -196,7 +195,6 @@ function AppLayout() {
           zIndex: 10,
         }}
       >
-        {/* ── HEADER ── */}
         <div style={{
           padding: "14px 10px 12px",
           display: "flex",
@@ -243,7 +241,6 @@ function AppLayout() {
           </button>
         </div>
 
-        {/* ── NAV PRINCIPAL ── */}
         <nav style={{ flex:1, paddingTop:8, paddingBottom:4, overflowY:"auto", overflowX:"hidden" }}>
           {navItems.slice(0, 4).map(item => (
             <div
@@ -302,7 +299,6 @@ function AppLayout() {
           ))}
         </nav>
 
-        {/* ── FOOTER ── */}
         <div style={{
           borderTop: "1px solid var(--sb-border)",
           padding: "8px 8px 10px",
@@ -310,7 +306,6 @@ function AppLayout() {
           flexDirection: "column",
           gap: 4,
         }}>
-          {/* Theme toggle */}
           <div style={{
             display: "flex",
             alignItems: "center",
@@ -319,7 +314,6 @@ function AppLayout() {
             <ThemeToggle variant="sidebar" />
           </div>
 
-          {/* Logout */}
           <button
             className="gt-logout-btn"
             onClick={handleLogout}
@@ -333,9 +327,7 @@ function AppLayout() {
         </div>
       </aside>
 
-      {/* ── MAIN ── */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", fontFamily:"'Outfit', sans-serif" }}>
-        {/* Topbar */}
         <header style={{
           height: 48,
           display: "flex",
@@ -368,7 +360,6 @@ function AppLayout() {
           </div>
         </header>
 
-        {/* Content */}
         <main style={{ flex:1, overflowY:"auto", padding:"22px 26px" }}>
           {activeSection === "dashboard"     && <Dashboard />}
           {activeSection === "clientes"      && <Clientes />}
