@@ -24,6 +24,7 @@ db.exec(`
     data_ida         TEXT DEFAULT '',
     data_volta       TEXT DEFAULT '',
     valor_por_pessoa REAL DEFAULT 0,
+    capacidade       INTEGER DEFAULT 0,
     status           TEXT DEFAULT 'ativa',
     created_at       DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -40,7 +41,7 @@ db.exec(`
     email           TEXT DEFAULT '',
     endereco        TEXT DEFAULT '',
     observacoes     TEXT DEFAULT '',
-    status          TEXT DEFAULT 'pendente',
+    status          TEXT DEFAULT 'a_confirmar',
     created_at      DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     FOREIGN KEY (viagem_id) REFERENCES viagens(id) ON DELETE SET NULL
@@ -58,6 +59,10 @@ db.exec(`
     FOREIGN KEY (viagem_id) REFERENCES viagens(id) ON DELETE SET NULL
   );
 `)
+
+try {
+  db.exec("ALTER TABLE viagens ADD COLUMN capacidade INTEGER DEFAULT 0")
+} catch (_) {  }
 
 function getDbPath() { return dbPath }
 function backup(destPath) { db.backup(destPath) }
@@ -92,19 +97,19 @@ function getViagens(userId) {
 
 function createViagem(userId, data) {
   const result = db.prepare(`
-    INSERT INTO viagens (user_id, nome, destino, data_ida, data_volta, valor_por_pessoa, status)
-    VALUES (?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO viagens (user_id, nome, destino, data_ida, data_volta, valor_por_pessoa, capacidade, status)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `).run(userId, data.nome, data.destino ?? "", data.data_ida ?? "", data.data_volta ?? "",
-    data.valor_por_pessoa ?? 0, data.status ?? "ativa")
+    data.valor_por_pessoa ?? 0, data.capacidade ?? 0, data.status ?? "ativa")
   return { success: true, id: result.lastInsertRowid }
 }
 
 function updateViagem(id, userId, data) {
   db.prepare(`
-    UPDATE viagens SET nome=?, destino=?, data_ida=?, data_volta=?, valor_por_pessoa=?, status=?
+    UPDATE viagens SET nome=?, destino=?, data_ida=?, data_volta=?, valor_por_pessoa=?, capacidade=?, status=?
     WHERE id=? AND user_id=?
   `).run(data.nome, data.destino, data.data_ida, data.data_volta,
-    data.valor_por_pessoa, data.status, id, userId)
+    data.valor_por_pessoa, data.capacidade ?? 0, data.status, id, userId)
   return { success: true }
 }
 
@@ -120,7 +125,6 @@ function deleteViagem(id, userId) {
       let historico = []
       try { historico = JSON.parse(pag.historico ?? "[]") } catch {}
       const valorPago = historico.reduce((s, h) => s + (h.valor ?? 0), 0)
-
       if (valorPago === 0) {
         db.prepare("DELETE FROM pagamentos WHERE id=?").run(pag.id)
         db.prepare("UPDATE clientes SET status='pendente' WHERE id=?").run(pag.cliente_id)
@@ -148,7 +152,7 @@ function createCliente(userId, data) {
     `).run(userId, data.viagem_id ?? null, data.nome_completo, data.cpf ?? "",
       data.rg ?? "", data.data_nascimento ?? "", data.telefone ?? "",
       data.email ?? "", data.endereco ?? "", data.observacoes ?? "",
-      data.status ?? "pendente")
+      data.status ?? "a_confirmar")
 
     const clienteId = result.lastInsertRowid
 
