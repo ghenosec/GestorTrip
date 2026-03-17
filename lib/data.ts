@@ -9,7 +9,7 @@ export interface Cliente {
   endereco: string
   observacoes: string
   viagemId: string | null
-  status: "pago" | "pendente"
+  status: "pago" | "pendente" | "a_confirmar"
 }
 
 export interface Viagem {
@@ -19,6 +19,7 @@ export interface Viagem {
   dataIda: string
   dataVolta: string
   valorPorPessoa: number
+  capacidade: number 
   status: "ativa" | "finalizada"
 }
 
@@ -39,13 +40,11 @@ export interface PagamentoHistorico {
 }
 
 export function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("pt-BR", {
-    style: "currency",
-    currency: "BRL",
-  }).format(value)
+  return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 }
 
 export function formatDate(dateStr: string): string {
+  if (!dateStr) return "—"
   const date = new Date(dateStr + "T12:00:00")
   return new Intl.DateTimeFormat("pt-BR").format(date)
 }
@@ -56,9 +55,8 @@ export function formatCPF(cpf: string): string {
 
 export function formatPhone(phone: string): string {
   const digits = phone.replace(/\D/g, "")
-  if (digits.length === 11) {
-    return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
-  }
+  if (digits.length === 11) return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7)}`
+  if (digits.length === 10) return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6)}`
   return phone
 }
 
@@ -78,20 +76,16 @@ export function isValidCPF(cpf: string): boolean {
   const digits = cpf.replace(/\D/g, "")
   if (digits.length !== 11) return false
   if (/^(\d)\1{10}$/.test(digits)) return false
-
   let sum = 0
   for (let i = 0; i < 9; i++) sum += parseInt(digits.charAt(i)) * (10 - i)
-  let remainder = (sum * 10) % 11
-  if (remainder === 10) remainder = 0
-  if (remainder !== parseInt(digits.charAt(9))) return false
-
+  let r = (sum * 10) % 11
+  if (r === 10) r = 0
+  if (r !== parseInt(digits.charAt(9))) return false
   sum = 0
   for (let i = 0; i < 10; i++) sum += parseInt(digits.charAt(i)) * (11 - i)
-  remainder = (sum * 10) % 11
-  if (remainder === 10) remainder = 0
-  if (remainder !== parseInt(digits.charAt(10))) return false
-
-  return true
+  r = (sum * 10) % 11
+  if (r === 10) r = 0
+  return r === parseInt(digits.charAt(10))
 }
 
 export function isValidName(name: string): boolean {
@@ -103,11 +97,11 @@ export function isValidEmail(email: string): boolean {
 }
 
 export function maskPhone(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 11)
-  if (digits.length === 0) return ""
-  if (digits.length <= 2) return `(${digits}`
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+  const d = value.replace(/\D/g, "").slice(0, 11)
+  if (d.length === 0) return ""
+  if (d.length <= 2) return `(${d}`
+  if (d.length <= 7) return `(${d.slice(0,2)}) ${d.slice(2)}`
+  return `(${d.slice(0,2)}) ${d.slice(2,7)}-${d.slice(7)}`
 }
 
 export function unmaskPhone(value: string): string {
@@ -115,11 +109,11 @@ export function unmaskPhone(value: string): string {
 }
 
 export function maskCPF(value: string): string {
-  const digits = value.replace(/\D/g, "").slice(0, 11)
-  if (digits.length <= 3) return digits
-  if (digits.length <= 6) return `${digits.slice(0, 3)}.${digits.slice(3)}`
-  if (digits.length <= 9) return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6)}`
-  return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`
+  const d = value.replace(/\D/g, "").slice(0, 11)
+  if (d.length <= 3) return d
+  if (d.length <= 6) return `${d.slice(0,3)}.${d.slice(3)}`
+  if (d.length <= 9) return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6)}`
+  return `${d.slice(0,3)}.${d.slice(3,6)}.${d.slice(6,9)}-${d.slice(9)}`
 }
 
 export function unmaskCPF(value: string): string {
