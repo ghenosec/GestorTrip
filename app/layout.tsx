@@ -10,6 +10,24 @@ const geist = Geist({ subsets: ["latin"] })
 export const metadata: Metadata = {
   title: 'GestorTrip - Gestão de Viagens',
   description: 'Sistema de gestão para agências de viagens. Gerencie clientes, viagens e pagamentos em um só lugar.',
+
+openGraph: {
+    title: 'GestorTrip - Gestão de Viagens',
+    description: 'Sistema de gestão para agências de viagens.',
+    url: 'https://gestortrip.app/',
+    siteName: 'GestorTrip',
+    images: [
+      {
+        url: 'https://gestortrip.app/preview.png', 
+        width: 1270,
+        height: 650,
+        alt: 'GestorTrip Preview',
+      },
+    ],
+    locale: 'pt_BR',
+    type: 'website',
+  },
+
   icons: {
     icon: [
       { url: '/globo.png', media: '(prefers-color-scheme: light)' },
