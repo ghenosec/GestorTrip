@@ -129,10 +129,9 @@ export function Clientes() {
         e.dataNascimento = "Data de nascimento inválida"
       }
     }
-    if (!form.telefone.trim())              e.telefone = "Telefone é obrigatório"
-    else if (form.telefone.length < 10)     e.telefone = "Telefone deve ter 10 ou 11 dígitos"
+    if (form.telefone.trim() && form.telefone.length < 10)
+      e.telefone = "Telefone deve ter 10 ou 11 dígitos"
     if (form.email.trim() && !isValidEmail(form.email)) e.email = "Email inválido"
-    if (!form.endereco.trim())              e.endereco = "Endereço é obrigatório"
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -270,7 +269,7 @@ export function Clientes() {
                     </button>
                   </TableCell>
                   <TableCell className="hidden md:table-cell text-sm">{formatCPF(c.cpf)}</TableCell>
-                  <TableCell className="hidden lg:table-cell text-sm">{formatPhone(c.telefone)}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-sm">{c.telefone ? formatPhone(c.telefone) : "—"}</TableCell>
                   <TableCell className="hidden xl:table-cell text-sm text-muted-foreground">
                     {viagem?.nome ?? "—"}
                   </TableCell>
@@ -306,7 +305,7 @@ export function Clientes() {
           <DialogHeader>
             <DialogTitle>{editingId ? "Editar Cliente" : "Novo Cliente"}</DialogTitle>
             <DialogDescription>
-              {editingId ? "Atualize os dados do cliente abaixo." : "Preencha os campos obrigatórios."}
+              {editingId ? "Atualize os dados do cliente abaixo." : "Preencha os campos obrigatórios (*)."}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
@@ -371,7 +370,7 @@ export function Clientes() {
                 {errors.dataNascimento && <p className="text-xs text-destructive">{errors.dataNascimento}</p>}
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="tel">Telefone *</Label>
+                <Label htmlFor="tel">Telefone</Label>
                 <Input id="tel" value={form.telefoneDisplay}
                   onChange={(e) => {
                     const raw = unmaskPhone(e.target.value)
@@ -390,11 +389,9 @@ export function Clientes() {
               {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
             </div>
             <div className="grid gap-2">
-              <Label htmlFor="end">Endereço *</Label>
+              <Label htmlFor="end">Endereço</Label>
               <Input id="end" value={form.endereco}
-                onChange={(e) => setForm((p) => ({ ...p, endereco: e.target.value }))}
-                className={errors.endereco ? "border-destructive" : ""} />
-              {errors.endereco && <p className="text-xs text-destructive">{errors.endereco}</p>}
+                onChange={(e) => setForm((p) => ({ ...p, endereco: e.target.value }))} />
             </div>
             <div className="grid gap-2">
               <Label htmlFor="viagem">Viagem vinculada</Label>
