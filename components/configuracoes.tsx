@@ -211,7 +211,7 @@ export function Configuracoes() {
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-xs text-muted-foreground leading-relaxed">
           <div className="flex flex-col gap-1">
-            <p className="text-sm font-medium text-foreground">GestorTrip v1.0</p>
+            <p className="text-sm font-medium text-foreground">GestorTrip v1.0.3</p>
             <p>Sistema de Gestão de Viagens</p>
           </div>
           <div className="border-t my-2" />
