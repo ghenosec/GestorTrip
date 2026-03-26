@@ -1,11 +1,11 @@
 const { contextBridge, ipcRenderer } = require("electron")
 
-
 contextBridge.exposeInMainWorld("electronAPI", {
-  
+
   onUpdateDownloaded: (cb) =>
     ipcRenderer.on("update-downloaded", (_, info) => cb(info)),
   installUpdate: () => ipcRenderer.send("install-update"),
+  checkForUpdates: () => ipcRenderer.invoke("updater:check"),
 
   checkLicense:    ()           => ipcRenderer.invoke("license:check"),
   activateLicense: (licenseKey) => ipcRenderer.invoke("license:activate", licenseKey),
@@ -21,11 +21,12 @@ contextBridge.exposeInMainWorld("electronAPI", {
   getTheme: ()      => ipcRenderer.invoke("theme:get"),
   setTheme: (theme) => ipcRenderer.invoke("theme:set", theme),
 
-  exportDb: () => ipcRenderer.invoke("db:export"),
-  importDb: () => ipcRenderer.invoke("db:import"),
+  exportDb:    () => ipcRenderer.invoke("db:export"),
+  importDb:    () => ipcRenderer.invoke("db:import"),
   exportExcel: (data) => ipcRenderer.invoke("export:excel", data),
 
   gerarRelatorio: (htmlContent) => ipcRenderer.invoke("relatorio:gerar", htmlContent),
+  gerarWord: (data) => ipcRenderer.invoke("word:gerar", data),
 
   getViagens:    (userId)           => ipcRenderer.invoke("viagens:get", userId),
   createViagem:  (userId, data)     => ipcRenderer.invoke("viagens:create", userId, data),
@@ -36,6 +37,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
   createCliente: (userId, data)     => ipcRenderer.invoke("clientes:create", userId, data),
   updateCliente: (id, userId, data) => ipcRenderer.invoke("clientes:update", id, userId, data),
   deleteCliente: (id, userId)       => ipcRenderer.invoke("clientes:delete", id, userId),
+
+  addClienteToViagem:     (clienteId, viagemId, userId) =>
+    ipcRenderer.invoke("clientes:addToViagem", clienteId, viagemId, userId),
+  removeClienteFromViagem: (clienteId, viagemId, userId) =>
+    ipcRenderer.invoke("clientes:removeFromViagem", clienteId, viagemId, userId),
 
   getPagamentos:   (userId)           => ipcRenderer.invoke("pagamentos:get", userId),
   createPagamento: (userId, data)     => ipcRenderer.invoke("pagamentos:create", userId, data),
