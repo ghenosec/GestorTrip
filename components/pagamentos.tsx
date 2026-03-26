@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react"
 import { useStore } from "@/lib/store"
 import { formatCurrency, getValorPago, getValorPendente } from "@/lib/data"
-import { StatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -25,6 +24,7 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 
 const FORMAS = ["pix", "dinheiro", "cartão", "transferência"] as const
 const FORMAS_LABEL: Record<string, string> = {
@@ -34,20 +34,40 @@ const FORMAS_LABEL: Record<string, string> = {
   "transferência": "Transferência",
 }
 
+type StatusPagamento = "pago" | "pendente" | "a_confirmar"
+
+function getStatusPagamento(valorTotal: number, valorPago: number): StatusPagamento {
+  if (valorPago <= 0)           return "a_confirmar"
+  if (valorPago >= valorTotal)  return "pago"
+  return "pendente"
+}
+
+const STATUS_STYLES: Record<StatusPagamento, string> = {
+  pago:        "bg-emerald-100 text-emerald-800",
+  pendente:    "bg-amber-100 text-amber-800",
+  a_confirmar: "bg-slate-100 text-slate-600",
+}
+const STATUS_LABELS: Record<StatusPagamento, string> = {
+  pago:        "Pago",
+  pendente:    "Pendente",
+  a_confirmar: "A confirmar",
+}
+
 export function Pagamentos() {
   const { pagamentos, viagens, addPagamentoHistorico, deletePagamento, getClienteById, getViagemById } = useStore()
-  const [search, setSearch]           = useState("")
+  const [search,       setSearch]       = useState("")
   const [viagemFilter, setViagemFilter] = useState("todas")
-  const [expandedId, setExpandedId]   = useState<string | null>(null)
-  const [parcelaOpen, setParcelaOpen]     = useState(false)
-  const [parcelaPagId, setParcelaPagId]   = useState<string | null>(null)
-  const [parcelaValor, setParcelaValor]   = useState("")
-  const [parcelaForma, setParcelaForma]   = useState<typeof FORMAS[number]>("pix")
-  const [parcelaData, setParcelaData]     = useState(new Date().toISOString().slice(0, 10))
-  const [parcelaObs, setParcelaObs]       = useState("")
-  const [parcelaSaving, setParcelaSaving] = useState(false)
+  const [statusFilter, setStatusFilter] = useState("todos")
+  const [expandedId,   setExpandedId]   = useState<string | null>(null)
 
-  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [parcelaOpen,    setParcelaOpen]    = useState(false)
+  const [parcelaPagId,   setParcelaPagId]   = useState<string | null>(null)
+  const [parcelaValor,   setParcelaValor]   = useState("")
+  const [parcelaForma,   setParcelaForma]   = useState<typeof FORMAS[number]>("pix")
+  const [parcelaData,    setParcelaData]    = useState(new Date().toISOString().slice(0, 10))
+  const [parcelaObs,     setParcelaObs]     = useState("")
+  const [parcelaSaving,  setParcelaSaving]  = useState(false)
+  const [deleteId,       setDeleteId]       = useState<string | null>(null)
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -58,9 +78,12 @@ export function Pagamentos() {
         (cliente?.nomeCompleto.toLowerCase().includes(q)) ||
         (viagem?.nome.toLowerCase().includes(q))
       const matchViagem = viagemFilter === "todas" || p.viagemId === viagemFilter
-      return matchSearch && matchViagem
+      const pago     = getValorPago(p)
+      const statusViagem = getStatusPagamento(p.valorTotal, pago)
+      const matchStatus = statusFilter === "todos" || statusViagem === statusFilter
+      return matchSearch && matchViagem && matchStatus
     })
-  }, [pagamentos, search, viagemFilter, getClienteById, getViagemById])
+  }, [pagamentos, search, viagemFilter, statusFilter, getClienteById, getViagemById])
 
   function openParcela(pagId: string) {
     setParcelaPagId(pagId)
@@ -82,7 +105,6 @@ export function Pagamentos() {
     if (valor > pendente + 0.01) {
       toast.error(`Valor excede o pendente (${formatCurrency(pendente)})`); return
     }
-
     setParcelaSaving(true)
     try {
       await addPagamentoHistorico(parcelaPagId, {
@@ -118,6 +140,7 @@ export function Pagamentos() {
         <h2 className="text-lg font-semibold text-foreground">Pagamentos</h2>
         <span className="text-xs text-muted-foreground">{filtered.length} registros</span>
       </div>
+
       <div className="flex flex-col gap-3 sm:flex-row">
         <Input
           placeholder="Buscar por cliente ou viagem..."
@@ -136,7 +159,19 @@ export function Pagamentos() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-full sm:w-44">
+            <SelectValue placeholder="Todos os status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="todos">Todos</SelectItem>
+            <SelectItem value="pago">✅ Pagos</SelectItem>
+            <SelectItem value="pendente">⏳ Pendentes</SelectItem>
+            <SelectItem value="a_confirmar">❓ A confirmar</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
+
       <div className="rounded-lg border bg-card overflow-hidden">
         <Table>
           <TableHeader>
@@ -159,12 +194,13 @@ export function Pagamentos() {
               </TableRow>
             ) : (
               filtered.map((p) => {
-                const cliente  = getClienteById(p.clienteId)
-                const viagem   = getViagemById(p.viagemId)
-                const pago     = getValorPago(p)
-                const pendente = getValorPendente(p)
-                const pct      = p.valorTotal > 0 ? Math.round((pago / p.valorTotal) * 100) : 0
+                const cliente    = getClienteById(p.clienteId)
+                const viagem     = getViagemById(p.viagemId)
+                const pago       = getValorPago(p)
+                const pendente   = getValorPendente(p)
+                const pct        = p.valorTotal > 0 ? Math.round((pago / p.valorTotal) * 100) : 0
                 const isExpanded = expandedId === p.id
+                const statusViagem = getStatusPagamento(p.valorTotal, pago)
 
                 return (
                   <>
@@ -176,12 +212,17 @@ export function Pagamentos() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           {isExpanded
-                            ? <ChevronUp className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                            ? <ChevronUp   className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                             : <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                           }
                           <div>
                             <p className="font-medium text-sm">{cliente?.nomeCompleto ?? "—"}</p>
-                            <StatusBadge status={cliente?.status ?? "pendente"} className="mt-0.5" />
+                            <span className={cn(
+                              "mt-0.5 inline-block rounded-full px-2 py-0.5 text-xs font-semibold",
+                              STATUS_STYLES[statusViagem]
+                            )}>
+                              {STATUS_LABELS[statusViagem]}
+                            </span>
                           </div>
                         </div>
                       </TableCell>
@@ -207,8 +248,7 @@ export function Pagamentos() {
                             </Button>
                           )}
                           <Button
-                            size="icon"
-                            variant="ghost"
+                            size="icon" variant="ghost"
                             className="h-7 w-7 text-destructive hover:bg-destructive/10"
                             title="Apagar registro de pagamento"
                             onClick={() => setDeleteId(p.id)}
@@ -218,6 +258,7 @@ export function Pagamentos() {
                         </div>
                       </TableCell>
                     </TableRow>
+
                     {isExpanded && (
                       <TableRow key={`${p.id}-hist`} className="bg-muted/20 hover:bg-muted/20">
                         <TableCell colSpan={7} className="py-3 px-6">
@@ -250,40 +291,35 @@ export function Pagamentos() {
           </TableBody>
         </Table>
       </div>
+
       <Dialog open={parcelaOpen} onOpenChange={setParcelaOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
             <DialogTitle>Registrar Pagamento</DialogTitle>
             <DialogDescription>
               {(() => {
-                const pag = pagamentos.find((p) => p.id === parcelaPagId)
+                const pag     = pagamentos.find((p) => p.id === parcelaPagId)
                 const cliente = pag ? getClienteById(pag.clienteId) : null
+                const viagem  = pag ? getViagemById(pag.viagemId)   : null
                 const pendente = pag ? getValorPendente(pag) : 0
-                return `${cliente?.nomeCompleto ?? ""} — Pendente: ${formatCurrency(pendente)}`
+                return `${cliente?.nomeCompleto ?? ""} — ${viagem?.nome ?? ""} — Pendente: ${formatCurrency(pendente)}`
               })()}
             </DialogDescription>
           </DialogHeader>
-
           <div className="flex flex-col gap-4 py-2">
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Valor pago (R$)</Label>
               <Input
-                type="number"
-                min="0.01"
-                step="0.01"
-                placeholder="0,00"
+                type="number" min="0.01" step="0.01" placeholder="0,00"
                 value={parcelaValor}
                 onChange={(e) => setParcelaValor(e.target.value)}
-                className="h-9 text-sm"
-                autoFocus
+                className="h-9 text-sm" autoFocus
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Forma de pagamento</Label>
               <Select value={parcelaForma} onValueChange={(v) => setParcelaForma(v as typeof FORMAS[number])}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {FORMAS.map((f) => (
                     <SelectItem key={f} value={f}>{FORMAS_LABEL[f]}</SelectItem>
@@ -293,24 +329,18 @@ export function Pagamentos() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Data do pagamento</Label>
-              <Input
-                type="date"
-                value={parcelaData}
+              <Input type="date" value={parcelaData}
                 onChange={(e) => setParcelaData(e.target.value)}
-                className="h-9 text-sm"
-              />
+                className="h-9 text-sm" />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Observação (opcional)</Label>
-              <Input
-                placeholder="Ex: entrada, 1ª parcela..."
+              <Input placeholder="Ex: entrada, 1ª parcela..."
                 value={parcelaObs}
                 onChange={(e) => setParcelaObs(e.target.value)}
-                className="h-9 text-sm"
-              />
+                className="h-9 text-sm" />
             </div>
           </div>
-
           <DialogFooter>
             <Button variant="outline" size="sm" onClick={() => setParcelaOpen(false)}>Cancelar</Button>
             <Button size="sm" onClick={handleSaveParcela} disabled={parcelaSaving}>
