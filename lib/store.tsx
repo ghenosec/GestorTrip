@@ -22,8 +22,10 @@ interface StoreContextType {
   addPagamento: (pagamento: Omit<Pagamento, "id" | "historico">) => Promise<void>
   addPagamentoHistorico: (pagamentoId: string, historico: Omit<PagamentoHistorico, "id">) => Promise<void>
   deletePagamento: (id: string) => Promise<void>
+  addClienteToViagem: (clienteId: string, viagemId: string) => Promise<void>
+  removeClienteFromViagem: (clienteId: string, viagemId: string) => Promise<void>
   getClientesByViagem: (viagemId: string) => Cliente[]
-  getPagamentoByCliente: (clienteId: string) => Pagamento | undefined
+  getPagamentoByCliente: (clienteId: string, viagemId?: string) => Pagamento | undefined
   getViagemById: (viagemId: string) => Viagem | undefined
   getClienteById: (clienteId: string) => Cliente | undefined
   reloadAll: () => Promise<void>
@@ -45,6 +47,19 @@ function hasElectron(): boolean {
 }
 
 function rowToCliente(row: Record<string, unknown>): Cliente {
+  let viagemIds: string[] = []
+  try {
+    const raw = row.viagem_ids
+    if (typeof raw === "string" && raw) {
+      viagemIds = JSON.parse(raw).map(String)
+    } else if (Array.isArray(raw)) {
+      viagemIds = raw.map(String)
+    }
+  } catch { viagemIds = [] }
+  if (viagemIds.length === 0 && row.viagem_id) {
+    viagemIds = [String(row.viagem_id)]
+  }
+
   return {
     id: String(row.id),
     nomeCompleto: String(row.nome_completo ?? ""),
@@ -55,7 +70,8 @@ function rowToCliente(row: Record<string, unknown>): Cliente {
     email: String(row.email ?? ""),
     endereco: String(row.endereco ?? ""),
     observacoes: String(row.observacoes ?? ""),
-    viagemId: row.viagem_id ? String(row.viagem_id) : null,
+    viagemIds,
+    viagemId: viagemIds[0] ?? null,
     status: (row.status as "pago" | "pendente" | "a_confirmar") ?? "a_confirmar",
   }
 }
@@ -70,6 +86,7 @@ function rowToViagem(row: Record<string, unknown>): Viagem {
     valorPorPessoa: Number(row.valor_por_pessoa ?? 0),
     capacidade: Number(row.capacidade ?? 0),
     status: (row.status as "ativa" | "finalizada") ?? "ativa",
+    tipo: (row.tipo as "onibus" | "aviao") ?? "onibus",
   }
 }
 
@@ -102,10 +119,10 @@ function rowToPagamento(row: Record<string, unknown>): Pagamento {
 const StoreContext = createContext<StoreContextType | null>(null)
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
-  const [clientes, setClientes]     = useState<Cliente[]>([])
-  const [viagens, setViagens]       = useState<Viagem[]>([])
+  const [clientes,   setClientes]   = useState<Cliente[]>([])
+  const [viagens,    setViagens]    = useState<Viagem[]>([])
   const [pagamentos, setPagamentos] = useState<Pagamento[]>([])
-  const [loading, setLoading]       = useState(true)
+  const [loading,    setLoading]    = useState(true)
   const [activeSection, setActiveSection] = useState("dashboard")
   const [fichaClienteId, setFichaClienteId] = useState<string | null>(null)
 
@@ -124,8 +141,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         window.electronAPI.getClientes(userId),
         window.electronAPI.getPagamentos(userId),
       ])
-      setViagens((rawViagens   ?? []).map(rowToViagem))
-      setClientes((rawClientes ?? []).map(rowToCliente))
+      setViagens((rawViagens     ?? []).map(rowToViagem))
+      setClientes((rawClientes   ?? []).map(rowToCliente))
       setPagamentos((rawPagamentos ?? []).map(rowToPagamento))
     } catch (err) {
       console.error("[Store] Erro ao carregar dados:", err)
@@ -150,7 +167,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       email:           data.email,
       endereco:        data.endereco,
       observacoes:     data.observacoes,
-      viagem_id:       data.viagemId ? Number(data.viagemId) : null,
+      viagem_ids:      data.viagemIds ?? (data.viagemId ? [data.viagemId] : []),
       status:          data.status,
     })
     await reloadAll()
@@ -161,7 +178,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     if (!hasElectron()) {
       setClientes((prev) => prev.map((c) => (c.id === id ? { ...c, ...data } : c))); return
     }
-    await window.electronAPI.updateCliente(Number(id), userId, {
+
+    const payload: Record<string, unknown> = {
       nome_completo:   data.nomeCompleto,
       cpf:             data.cpf,
       rg:              data.rg,
@@ -170,11 +188,15 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       email:           data.email,
       endereco:        data.endereco,
       observacoes:     data.observacoes,
-      viagem_id:       data.viagemId !== undefined
-                         ? (data.viagemId ? Number(data.viagemId) : null)
-                         : undefined,
       status:          data.status,
-    })
+    }
+    if (data.viagemIds !== undefined) {
+      payload.viagem_ids = data.viagemIds
+    } else if (data.viagemId !== undefined) {
+      payload.viagem_id = data.viagemId ? Number(data.viagemId) : null
+    }
+
+    await window.electronAPI.updateCliente(Number(id), userId, payload)
     await reloadAll()
   }, [reloadAll])
 
@@ -189,13 +211,44 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await reloadAll()
   }, [reloadAll])
 
+  const addClienteToViagem = useCallback(async (clienteId: string, viagemId: string) => {
+    const userId = getUserId()
+    if (!hasElectron()) {
+      setClientes((prev) => prev.map((c) => {
+        if (c.id !== clienteId) return c
+        const ids = [...new Set([...(c.viagemIds ?? []), viagemId])]
+        return { ...c, viagemIds: ids, viagemId: ids[0] ?? null }
+      }))
+      return
+    }
+    await window.electronAPI.addClienteToViagem(Number(clienteId), Number(viagemId), userId)
+    await reloadAll()
+  }, [reloadAll])
+
+  const removeClienteFromViagem = useCallback(async (clienteId: string, viagemId: string) => {
+    const userId = getUserId()
+    if (!hasElectron()) {
+      setClientes((prev) => prev.map((c) => {
+        if (c.id !== clienteId) return c
+        const ids = (c.viagemIds ?? []).filter((v) => v !== viagemId)
+        return { ...c, viagemIds: ids, viagemId: ids[0] ?? null }
+      }))
+      return
+    }
+    await window.electronAPI.removeClienteFromViagem(Number(clienteId), Number(viagemId), userId)
+    await reloadAll()
+  }, [reloadAll])
+
   const addViagem = useCallback(async (data: Omit<Viagem, "id">) => {
     const userId = getUserId()
     if (!hasElectron()) { setViagens((prev) => [...prev, { ...data, id: generateId() }]); return }
     await window.electronAPI.createViagem(userId, {
-      nome: data.nome, destino: data.destino, data_ida: data.dataIda,
-      data_volta: data.dataVolta, valor_por_pessoa: data.valorPorPessoa,
-      capacidade: data.capacidade ?? 0, status: data.status,
+      nome: data.nome, destino: data.destino,
+      data_ida: data.dataIda, data_volta: data.dataVolta,
+      valor_por_pessoa: data.valorPorPessoa,
+      capacidade: data.capacidade ?? 0,
+      status: data.status,
+      tipo: data.tipo ?? "onibus",
     })
     await reloadAll()
   }, [reloadAll])
@@ -204,26 +257,22 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const userId = getUserId()
     if (!hasElectron()) {
       setViagens((prev) => prev.map((v) => (v.id === id ? { ...v, ...data } : v)))
-      if (data.status === "ativa") {
-        setClientes((prev) => prev.map((c) =>
-          c.viagemId === id && c.status === "pago"
-            ? { ...c, status: "a_confirmar" as const }
-            : c
-        ))
-      }
       return
     }
     const atual = viagens.find((v) => v.id === id)
     if (!atual) return
     const merged = { ...atual, ...data }
     await window.electronAPI.updateViagem(Number(id), userId, {
-      nome: merged.nome, destino: merged.destino, data_ida: merged.dataIda,
-      data_volta: merged.dataVolta, valor_por_pessoa: merged.valorPorPessoa,
-      capacidade: merged.capacidade ?? 0, status: merged.status,
+      nome: merged.nome, destino: merged.destino,
+      data_ida: merged.dataIda, data_volta: merged.dataVolta,
+      valor_por_pessoa: merged.valorPorPessoa,
+      capacidade: merged.capacidade ?? 0,
+      status: merged.status,
+      tipo: merged.tipo ?? "onibus",
     })
     if (data.status === "ativa" && atual.status !== "ativa") {
       const clientesDaViagem = clientes.filter(
-        (c) => c.viagemId === id && c.status === "pago"
+        (c) => (c.viagemIds ?? []).includes(id) && c.status === "pago"
       )
       for (const c of clientesDaViagem) {
         await window.electronAPI.updateCliente(Number(c.id), userId, { status: "a_confirmar" })
@@ -236,7 +285,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const userId = getUserId()
     if (!hasElectron()) {
       setViagens((prev) => prev.filter((v) => v.id !== id))
-      setClientes((prev) => prev.map((c) => (c.viagemId === id ? { ...c, viagemId: null } : c)))
+      setClientes((prev) => prev.map((c) => {
+        const ids = (c.viagemIds ?? []).filter((v) => v !== id)
+        return { ...c, viagemIds: ids, viagemId: ids[0] ?? null }
+      }))
       setPagamentos((prev) => prev.filter((p) => p.viagemId !== id))
       return
     }
@@ -258,19 +310,33 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   const addPagamentoHistorico = useCallback(
     async (pagamentoId: string, novoHistorico: Omit<PagamentoHistorico, "id">) => {
-      const userId = getUserId()
+      const userId   = getUserId()
       const pagamento = pagamentos.find((p) => p.id === pagamentoId)
       if (!pagamento) return
 
       if (!hasElectron()) {
-        setPagamentos((prev) => prev.map((p) => {
-          if (p.id !== pagamentoId) return p
-          const updated = { ...p, historico: [...p.historico, { ...novoHistorico, id: generateId() }] }
-          if (getValorPago(updated) >= p.valorTotal)
+        setPagamentos((prev) => {
+          const next = prev.map((p) => {
+            if (p.id !== pagamentoId) return p
+            return { ...p, historico: [...p.historico, { ...novoHistorico, id: generateId() }] }
+          })
+          const updatedPag = next.find((p) => p.id === pagamentoId)!
+          const outrosPags = next.filter((p) => p.clienteId === updatedPag.clienteId && p.id !== pagamentoId)
+          const totalPagoAtual = getValorPago(updatedPag)
+          const todasPagas = totalPagoAtual >= updatedPag.valorTotal &&
+            outrosPags.every((p) => getValorPago(p) >= p.valorTotal)
+          const temQualquer = totalPagoAtual > 0 || outrosPags.some((p) => getValorPago(p) > 0)
+          if (todasPagas) {
             setClientes((prev2) => prev2.map((c) =>
-              c.id === p.clienteId ? { ...c, status: "pago" as const } : c))
-          return updated
-        }))
+              c.id === updatedPag.clienteId ? { ...c, status: "pago" as const } : c
+            ))
+          } else if (temQualquer) {
+            setClientes((prev2) => prev2.map((c) =>
+              c.id === updatedPag.clienteId ? { ...c, status: "pendente" as const } : c
+            ))
+          }
+          return next
+        })
         return
       }
 
@@ -287,8 +353,21 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         historico:   JSON.stringify(historicoAtualizado),
       })
 
-      if (totalPago >= pagamento.valorTotal) {
+      const outrosPags = pagamentos.filter(
+        (p) => p.clienteId === pagamento.clienteId && p.id !== pagamentoId
+      )
+      const todasPagas = totalPago >= pagamento.valorTotal &&
+        outrosPags.every((p) => {
+          const pago = p.historico.reduce((s, h) => s + h.valor, 0)
+          return pago >= p.valorTotal
+        })
+      const temQualquerPagamento = totalPago > 0 ||
+        outrosPags.some((p) => p.historico.reduce((s, h) => s + h.valor, 0) > 0)
+
+      if (todasPagas) {
         await window.electronAPI.updateCliente(Number(pagamento.clienteId), userId, { status: "pago" })
+      } else if (temQualquerPagamento) {
+        await window.electronAPI.updateCliente(Number(pagamento.clienteId), userId, { status: "pendente" })
       }
 
       await reloadAll()
@@ -305,16 +384,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await reloadAll()
   }, [reloadAll])
 
-  const getClientesByViagem   = useCallback((viagemId: string) => clientes.filter((c) => c.viagemId === viagemId), [clientes])
-  const getPagamentoByCliente = useCallback((clienteId: string) => pagamentos.find((p) => p.clienteId === clienteId), [pagamentos])
-  const getViagemById         = useCallback((viagemId: string) => viagens.find((v) => v.id === viagemId), [viagens])
-  const getClienteById        = useCallback((clienteId: string) => clientes.find((c) => c.id === clienteId), [clientes])
+  const getClientesByViagem = useCallback(
+    (viagemId: string) =>
+      clientes.filter((c) => (c.viagemIds ?? [c.viagemId].filter(Boolean)).includes(viagemId)),
+    [clientes]
+  )
+
+  const getPagamentoByCliente = useCallback(
+    (clienteId: string, viagemId?: string) =>
+      pagamentos.find((p) =>
+        p.clienteId === clienteId && (viagemId ? p.viagemId === viagemId : true)
+      ),
+    [pagamentos]
+  )
+
+  const getViagemById  = useCallback((vid: string) => viagens.find((v) => v.id === vid), [viagens])
+  const getClienteById = useCallback((cid: string) => clientes.find((c) => c.id === cid), [clientes])
 
   const value = useMemo(() => ({
     clientes, viagens, pagamentos, loading, activeSection, setActiveSection,
     addCliente, updateCliente, deleteCliente,
     addViagem, updateViagem, deleteViagem,
     addPagamento, addPagamentoHistorico, deletePagamento,
+    addClienteToViagem, removeClienteFromViagem,
     getClientesByViagem, getPagamentoByCliente, getViagemById, getClienteById,
     reloadAll,
     openFichaCliente, fichaClienteId, closeFichaCliente,
@@ -323,6 +415,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addCliente, updateCliente, deleteCliente,
     addViagem, updateViagem, deleteViagem,
     addPagamento, addPagamentoHistorico, deletePagamento,
+    addClienteToViagem, removeClienteFromViagem,
     getClientesByViagem, getPagamentoByCliente, getViagemById, getClienteById,
     reloadAll,
     openFichaCliente, fichaClienteId, closeFichaCliente,
