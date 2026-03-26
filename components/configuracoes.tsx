@@ -4,23 +4,27 @@ import { useState } from "react"
 import { useStore } from "@/lib/store"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, Upload, CheckCircle2, AlertCircle, Loader2, FileSpreadsheet } from "lucide-react"
+import {
+  Download, Upload, CheckCircle2, AlertCircle,
+  Loader2, FileSpreadsheet, RefreshCw, ArrowDownCircle,
+} from "lucide-react"
 
-type Status = { type: "success" | "error"; message: string } | null
+type Status = { type: "success" | "error" | "info"; message: string } | null
 
 export function Configuracoes() {
   const { reloadAll, clientes, viagens, pagamentos } = useStore()
 
-  const [exportStatus,  setExportStatus]  = useState<Status>(null)
-  const [importStatus,  setImportStatus]  = useState<Status>(null)
-  const [excelStatus,   setExcelStatus]   = useState<Status>(null)
-  const [exporting,     setExporting]     = useState(false)
-  const [importing,     setImporting]     = useState(false)
-  const [exportingXlsx, setExportingXlsx] = useState(false)
+  const [exportStatus,   setExportStatus]   = useState<Status>(null)
+  const [importStatus,   setImportStatus]   = useState<Status>(null)
+  const [excelStatus,    setExcelStatus]    = useState<Status>(null)
+  const [updateStatus,   setUpdateStatus]   = useState<Status>(null)
+  const [exporting,      setExporting]      = useState(false)
+  const [importing,      setImporting]      = useState(false)
+  const [exportingXlsx,  setExportingXlsx]  = useState(false)
+  const [checkingUpdate, setCheckingUpdate] = useState(false)
 
   async function handleExport() {
-    setExporting(true)
-    setExportStatus(null)
+    setExporting(true); setExportStatus(null)
     try {
       const result = await window.electronAPI.exportDb()
       if (result.canceled) { setExporting(false); return }
@@ -31,14 +35,11 @@ export function Configuracoes() {
       )
     } catch {
       setExportStatus({ type: "error", message: "Erro inesperado ao exportar." })
-    } finally {
-      setExporting(false)
-    }
+    } finally { setExporting(false) }
   }
 
   async function handleImport() {
-    setImporting(true)
-    setImportStatus(null)
+    setImporting(true); setImportStatus(null)
     try {
       const result = await window.electronAPI.importDb()
       if (result.canceled) { setImporting(false); return }
@@ -50,14 +51,11 @@ export function Configuracoes() {
       }
     } catch {
       setImportStatus({ type: "error", message: "Erro inesperado ao importar." })
-    } finally {
-      setImporting(false)
-    }
+    } finally { setImporting(false) }
   }
 
   async function handleExportExcel() {
-    setExportingXlsx(true)
-    setExcelStatus(null)
+    setExportingXlsx(true); setExcelStatus(null)
     try {
       const clientesData = clientes.map((c) => ({
         "Nome Completo":    c.nomeCompleto,
@@ -121,9 +119,29 @@ export function Configuracoes() {
     } catch (e) {
       console.error("EXCEL ERROR:", e)
       setExcelStatus({ type: "error", message: "Erro inesperado ao gerar Excel." })
-    } finally {
-      setExportingXlsx(false)
-    }
+    } finally { setExportingXlsx(false) }
+  }
+
+  async function handleCheckUpdate() {
+    setCheckingUpdate(true); setUpdateStatus(null)
+    try {
+      const result = await window.electronAPI.checkForUpdates()
+      if (result.error) {
+        setUpdateStatus({ type: "error", message: `Não foi possível verificar: ${result.error}` })
+      } else if (result.hasUpdate) {
+        setUpdateStatus({
+          type: "info",
+          message: `Nova versão disponível: v${result.version}. O download será feito automaticamente e você será notificado quando estiver pronto para instalar.`,
+        })
+      } else {
+        setUpdateStatus({
+          type: "success",
+          message: `Você já está na versão mais recente${result.current ? ` (v${result.current})` : ""}.`,
+        })
+      }
+    } catch {
+      setUpdateStatus({ type: "error", message: "Erro inesperado ao verificar atualizações." })
+    } finally { setCheckingUpdate(false) }
   }
 
   return (
@@ -176,7 +194,6 @@ export function Configuracoes() {
           </div>
         </CardContent>
       </Card>
-
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium">Exportar para Excel</CardTitle>
@@ -204,14 +221,45 @@ export function Configuracoes() {
           </div>
         </CardContent>
       </Card>
-
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-medium">Atualizações</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            O GestorTrip verifica e baixa atualizações automaticamente em segundo plano.
+            Clique abaixo para verificar manualmente se há uma nova versão disponível.
+          </p>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium">Verificar atualizações</p>
+                <p className="text-xs text-muted-foreground">Consulta o servidor para checar se há novidades</p>
+              </div>
+              <Button
+                size="sm" variant="outline"
+                onClick={handleCheckUpdate}
+                disabled={checkingUpdate}
+                className="shrink-0 gap-2"
+              >
+                {checkingUpdate
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <RefreshCw className="h-3.5 w-3.5" />
+                }
+                {checkingUpdate ? "Verificando…" : "Verificar agora"}
+              </Button>
+            </div>
+            {updateStatus && <StatusMessage status={updateStatus} />}
+          </div>
+        </CardContent>
+      </Card>
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-medium">Sobre o aplicativo</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-xs text-muted-foreground leading-relaxed">
           <div className="flex flex-col gap-1">
-            <p className="text-sm font-medium text-foreground">GestorTrip v1.0.3</p>
+            <p className="text-sm font-medium text-foreground">GestorTrip v1.0.4</p>
             <p>Sistema de Gestão de Viagens</p>
           </div>
           <div className="border-t my-2" />
@@ -227,17 +275,21 @@ export function Configuracoes() {
   )
 }
 
-function StatusMessage({ status }: { status: { type: "success" | "error"; message: string } }) {
+function StatusMessage({ status }: { status: { type: "success" | "error" | "info"; message: string } }) {
+  const styles = {
+    success: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+    error:   "border-destructive/30 bg-destructive/5 text-destructive",
+    info:    "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-400",
+  }
+  const Icon = status.type === "success"
+    ? CheckCircle2
+    : status.type === "info"
+      ? ArrowDownCircle
+      : AlertCircle
+
   return (
-    <div className={`flex items-start gap-2 rounded-md border px-3 py-2 text-xs ${
-      status.type === "success"
-        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400"
-        : "border-destructive/30 bg-destructive/5 text-destructive"
-    }`}>
-      {status.type === "success"
-        ? <CheckCircle2 className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-        : <AlertCircle  className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-      }
+    <div className={`flex items-start gap-2 rounded-md border px-3 py-2 text-xs ${styles[status.type]}`}>
+      <Icon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
       {status.message}
     </div>
   )
