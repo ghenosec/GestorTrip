@@ -4,14 +4,15 @@ declare global {
   interface Window {
     electronAPI: {
 
-    exportExcel: (data: {
-      clientes:   Record<string, unknown>[]
-      viagens:    Record<string, unknown>[]
-      pagamentos: Record<string, unknown>[]
+      exportExcel: (data: {
+        clientes:   Record<string, unknown>[]
+        viagens:    Record<string, unknown>[]
+        pagamentos: Record<string, unknown>[]
       }) => Promise<{ success?: boolean; canceled?: boolean; error?: string }>
 
-onUpdateDownloaded: (cb: (info: { version: string }) => void) => void
-installUpdate: () => void
+      onUpdateDownloaded: (cb: (info: { version: string }) => void) => void
+      installUpdate: () => void
+      checkForUpdates: () => Promise<{ hasUpdate: boolean; version?: string; current?: string; error?: string }>
 
       checkLicense:    () => Promise<boolean>
       activateLicense: (licenseKey: string) => Promise<{ success: boolean; message?: string }>
@@ -32,6 +33,11 @@ installUpdate: () => void
 
       gerarRelatorio: (htmlContent: string) => Promise<{ success: boolean; canceled?: boolean; path?: string; error?: string }>
 
+      gerarWord: (data: {
+        titulo: string
+        linhas: string[]
+      }) => Promise<{ success: boolean; canceled?: boolean; path?: string; error?: string }>
+
       getViagens:   (userId: number) => Promise<Record<string, unknown>[]>
       createViagem: (userId: number, data: Record<string, unknown>) => Promise<{ success: boolean; id?: number }>
       updateViagem: (id: number, userId: number, data: Record<string, unknown>) => Promise<{ success: boolean }>
@@ -41,6 +47,9 @@ installUpdate: () => void
       createCliente: (userId: number, data: Record<string, unknown>) => Promise<{ success: boolean; id?: number }>
       updateCliente: (id: number, userId: number, data: Record<string, unknown>) => Promise<{ success: boolean }>
       deleteCliente: (id: number, userId: number) => Promise<{ success: boolean }>
+
+      addClienteToViagem:    (clienteId: number, viagemId: number, userId: number) => Promise<{ success: boolean; error?: string }>
+      removeClienteFromViagem: (clienteId: number, viagemId: number, userId: number) => Promise<{ success: boolean; error?: string }>
 
       getPagamentos:   (userId: number) => Promise<Record<string, unknown>[]>
       createPagamento: (userId: number, data: Record<string, unknown>) => Promise<{ success: boolean; id?: number }>
