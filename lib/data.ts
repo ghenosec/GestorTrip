@@ -8,6 +8,7 @@ export interface Cliente {
   email: string
   endereco: string
   observacoes: string
+  viagemIds: string[]
   viagemId: string | null
   status: "pago" | "pendente" | "a_confirmar"
 }
@@ -19,8 +20,9 @@ export interface Viagem {
   dataIda: string
   dataVolta: string
   valorPorPessoa: number
-  capacidade: number 
+  capacidade: number
   status: "ativa" | "finalizada"
+  tipo: "onibus" | "aviao"
 }
 
 export interface Pagamento {
@@ -50,6 +52,7 @@ export function formatDate(dateStr: string): string {
 }
 
 export function formatCPF(cpf: string): string {
+  if (!cpf) return "—"
   return cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
 }
 
