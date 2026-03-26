@@ -5,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useStore } from "@/lib/store"
 import { formatCurrency, formatDate, getValorPago, getValorPendente } from "@/lib/data"
 import {
-  Users, Earth, CheckCircle2, Clock, TrendingUp, Wallet,
-  AlertTriangle, CalendarClock, MapPin, ArrowRight,
+  Users, Earth, CheckCircle2, Clock,
+  Wallet, AlertTriangle, CalendarClock, MapPin, ArrowRight,
 } from "lucide-react"
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -55,6 +55,12 @@ function formatYAxis(value: number): string {
   return `R$ ${value}`
 }
 
+function getStatusPagamento(valorTotal: number, valorPago: number): "pago" | "pendente" | "a_confirmar" {
+  if (valorPago <= 0)          return "a_confirmar"
+  if (valorPago >= valorTotal) return "pago"
+  return "pendente"
+}
+
 export function Dashboard() {
   const { clientes, viagens, pagamentos, setActiveSection, openFichaCliente } = useStore()
 
@@ -63,14 +69,24 @@ export function Dashboard() {
   }, [])
 
   const stats = useMemo(() => {
-    const totalClientes       = clientes.length
-    const viagensAtivas       = viagens.filter((v) => v.status === "ativa").length
-    const clientesPagos       = clientes.filter((c) => c.status === "pago").length
-    const clientesPendentes   = clientes.filter((c) => c.status === "pendente").length
-    const clientesAConfirmar  = clientes.filter((c) => c.status === "a_confirmar").length
-    const valorTotalReceber   = pagamentos.reduce((s, p) => s + getValorPendente(p), 0)
-    const valorTotalRecebido  = pagamentos.reduce((s, p) => s + getValorPago(p), 0)
-    return { totalClientes, viagensAtivas, clientesPagos, clientesPendentes, clientesAConfirmar, valorTotalReceber, valorTotalRecebido }
+    const totalClientes      = clientes.length
+    const viagensAtivas      = viagens.filter((v) => v.status === "ativa").length
+    const valorTotalRecebido = pagamentos.reduce((s, p) => s + getValorPago(p), 0)
+
+    let pagos = 0, pendentes = 0, aConfirmar = 0
+    for (const p of pagamentos) {
+      const status = getStatusPagamento(p.valorTotal, getValorPago(p))
+      if (status === "pago")        pagos++
+      else if (status === "pendente") pendentes++
+      else                            aConfirmar++
+    }
+
+    return {
+      totalClientes, viagensAtivas, valorTotalRecebido,
+      clientesPagos: pagos,
+      clientesPendentes: pendentes,
+      clientesAConfirmar: aConfirmar,
+    }
   }, [clientes, viagens, pagamentos])
 
   const proximasViagens = useMemo(() => {
@@ -86,7 +102,7 @@ export function Dashboard() {
 
   const pendentesCriticos = useMemo(() => {
     return pagamentos
-      .filter((p) => getValorPendente(p) > 0)
+      .filter((p) => getValorPago(p) > 0 && getValorPendente(p) > 0)
       .sort((a, b) => getValorPendente(b) - getValorPendente(a))
       .slice(0, 5)
       .map((p) => {
@@ -103,7 +119,7 @@ export function Dashboard() {
     const total    = vPags.reduce((s, p) => s + p.valorTotal, 0)
     return {
       nome: v.nome.length > 14 ? v.nome.substring(0, 14) + "…" : v.nome,
-      "Total": total,
+      "Total":    total,
       "Recebido": recebido,
     }
   }), [viagens, pagamentos])
@@ -127,12 +143,12 @@ export function Dashboard() {
   const COR_REC    = "#10b981"
 
   const kpis = [
-    { title: "Total de Clientes",  value: stats.totalClientes,                      icon: Users,        color: "text-blue-500",    bg: "bg-blue-500/10"    },
-    { title: "Viagens Ativas",     value: stats.viagensAtivas,                      icon: Earth,        color: "text-indigo-500",  bg: "bg-indigo-500/10"  },
-    { title: "Pagos",              value: stats.clientesPagos,                      icon: CheckCircle2, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-    { title: "Pendentes",          value: stats.clientesPendentes,                  icon: Clock,        color: "text-amber-500",   bg: "bg-amber-500/10"   },
-    { title: "A confirmar",        value: stats.clientesAConfirmar,                 icon: AlertTriangle,color: "text-slate-500",   bg: "bg-slate-500/10"   },
-    { title: "Total Recebido",     value: formatCurrency(stats.valorTotalRecebido),  icon: Wallet,       color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { title: "Total de Clientes", value: stats.totalClientes,                     icon: Users,         color: "text-blue-500",    bg: "bg-blue-500/10"    },
+    { title: "Viagens Ativas",    value: stats.viagensAtivas,                     icon: Earth,         color: "text-indigo-500",  bg: "bg-indigo-500/10"  },
+    { title: "Pagos",             value: stats.clientesPagos,                     icon: CheckCircle2,  color: "text-emerald-500", bg: "bg-emerald-500/10" },
+    { title: "Pendentes",         value: stats.clientesPendentes,                 icon: Clock,         color: "text-amber-500",   bg: "bg-amber-500/10"   },
+    { title: "A confirmar",       value: stats.clientesAConfirmar,                icon: AlertTriangle, color: "text-slate-500",   bg: "bg-slate-500/10"   },
+    { title: "Total Recebido",    value: formatCurrency(stats.valorTotalRecebido), icon: Wallet,        color: "text-emerald-500", bg: "bg-emerald-500/10" },
   ]
 
   function diasAte(dataIda: string): number {
@@ -142,7 +158,6 @@ export function Dashboard() {
 
   return (
     <div className="flex flex-col gap-5">
-
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         {kpis.map((kpi) => (
           <Card key={kpi.title}>
@@ -176,7 +191,10 @@ export function Dashboard() {
                 Nenhuma viagem ativa futura.
               </p>
             ) : proximasViagens.map((v) => {
-              const confirmados = clientes.filter((c) => c.viagemId === v.id).length
+
+              const confirmados = clientes.filter((c) =>
+                (c.viagemIds ?? (c.viagemId ? [c.viagemId] : [])).includes(v.id)
+              ).length
               const capacidade  = v.capacidade ?? 0
               const temCap      = capacidade > 0
               const pct         = temCap ? Math.min((confirmados / capacidade) * 100, 100) : null
@@ -221,7 +239,7 @@ export function Dashboard() {
                     <Progress
                       value={pct}
                       className={`h-1.5 ${
-                        lotada      ? "[&>div]:bg-red-500"
+                        lotada        ? "[&>div]:bg-red-500"
                         : quaseLotada ? "[&>div]:bg-amber-500"
                         : ""
                       }`}
@@ -232,7 +250,6 @@ export function Dashboard() {
             })}
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-3 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -313,10 +330,9 @@ export function Dashboard() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Status dos Clientes</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Status dos Vínculos</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center pt-0">
             <div className="h-44 w-full">
