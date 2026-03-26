@@ -2,12 +2,13 @@
 
 import { useState, useMemo } from "react"
 import { useStore } from "@/lib/store"
-import { formatCPF, formatPhone, formatDate, formatCurrency, getValorPago, getValorPendente, maskPhone, maskCPF, unmaskPhone, unmaskCPF } from "@/lib/data"
+import { formatCPF, formatPhone, formatCurrency, getValorPago, getValorPendente, maskPhone, maskCPF, unmaskPhone, unmaskCPF } from "@/lib/data"
 import { StatusBadge } from "@/components/status-badge"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
@@ -19,14 +20,16 @@ import type { Cliente } from "@/lib/data"
 
 export function PesquisaRapida() {
   const { clientes, viagens, getViagemById, updateCliente } = useStore()
-  const [query, setQuery]             = useState("")
-  const [editing, setEditing]         = useState<Cliente | null>(null)
-  const [saving, setSaving]           = useState(false)
-  
+  const [query,   setQuery]   = useState("")
+  const [editing, setEditing] = useState<Cliente | null>(null)
+  const [saving,  setSaving]  = useState(false)
+
   const [form, setForm] = useState<Omit<Cliente, "id">>({
     nomeCompleto: "", cpf: "", rg: "", dataNascimento: "",
     telefone: "", email: "", endereco: "", observacoes: "",
-    viagemId: null, status: "pendente",
+    viagemIds: [],
+    viagemId: null,
+    status: "pendente",
   })
 
   const results = useMemo(() => {
@@ -41,10 +44,17 @@ export function PesquisaRapida() {
 
   function openEdit(c: Cliente) {
     setForm({
-      nomeCompleto: c.nomeCompleto, cpf: c.cpf, rg: c.rg,
-      dataNascimento: c.dataNascimento, telefone: c.telefone,
-      email: c.email, endereco: c.endereco, observacoes: c.observacoes,
-      viagemId: c.viagemId, status: c.status,
+      nomeCompleto:   c.nomeCompleto,
+      cpf:            c.cpf,
+      rg:             c.rg,
+      dataNascimento: c.dataNascimento,
+      telefone:       c.telefone,
+      email:          c.email,
+      endereco:       c.endereco,
+      observacoes:    c.observacoes,
+      viagemIds:      c.viagemIds ?? (c.viagemId ? [c.viagemId] : []),
+      viagemId:       c.viagemId,
+      status:         c.status,
     })
     setEditing(c)
   }
@@ -55,7 +65,7 @@ export function PesquisaRapida() {
     try {
       await updateCliente(editing.id, {
         ...form,
-        cpf: unmaskCPF(form.cpf),
+        cpf:      unmaskCPF(form.cpf),
         telefone: unmaskPhone(form.telefone),
       })
       setEditing(null)
@@ -75,9 +85,13 @@ export function PesquisaRapida() {
 
       <div className="relative max-w-xl">
         <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Digite para buscar..." value={query}
+        <Input
+          placeholder="Digite para buscar..."
+          value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="h-12 pl-12 text-base" autoFocus />
+          className="h-12 pl-12 text-base"
+          autoFocus
+        />
       </div>
 
       {query.trim().length >= 2 && (
@@ -89,9 +103,14 @@ export function PesquisaRapida() {
           </p>
 
           {results.map((c) => {
-            const viagem = c.viagemId ? getViagemById(c.viagemId) : null
+            const ids = c.viagemIds ?? (c.viagemId ? [c.viagemId] : [])
+            const viagensDoCliente = ids
+              .map((id) => getViagemById(id))
+              .filter(Boolean)
+
             return (
-              <Card key={c.id}
+              <Card
+                key={c.id}
                 className="cursor-pointer transition-shadow hover:shadow-md hover:border-primary/40"
                 onClick={() => openEdit(c)}
               >
@@ -134,10 +153,17 @@ export function PesquisaRapida() {
                     </div>
                   </div>
 
-                  {viagem && (
-                    <div className="ml-12 sm:ml-0 shrink-0 rounded-md bg-muted px-3 py-2 text-sm">
-                      <span className="text-muted-foreground">Viagem:</span>{" "}
-                      <span className="font-medium text-card-foreground">{viagem.nome}</span>
+                  {viagensDoCliente.length > 0 && (
+                    <div className="ml-12 sm:ml-0 shrink-0 flex flex-wrap gap-1">
+                      {viagensDoCliente.map((v) => v && (
+                        <span
+                          key={v.id}
+                          className="rounded-md bg-muted px-3 py-2 text-sm whitespace-nowrap"
+                        >
+                          <span className="text-muted-foreground">Viagem:</span>{" "}
+                          <span className="font-medium text-card-foreground">{v.nome}</span>
+                        </span>
+                      ))}
                     </div>
                   )}
                 </CardContent>
@@ -163,88 +189,130 @@ export function PesquisaRapida() {
           <div className="grid grid-cols-1 gap-4 py-2 sm:grid-cols-2">
             <div className="sm:col-span-2 flex flex-col gap-1.5">
               <Label className="text-xs">Nome completo</Label>
-              <Input value={form.nomeCompleto}
+              <Input
+                value={form.nomeCompleto}
                 onChange={(e) => setForm((f) => ({ ...f, nomeCompleto: e.target.value }))}
-                className="h-9 text-sm" />
+                className="h-9 text-sm"
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">CPF</Label>
-              <Input value={maskCPF(form.cpf)}
+              <Input
+                value={maskCPF(form.cpf)}
                 onChange={(e) => setForm((f) => ({ ...f, cpf: unmaskCPF(e.target.value) }))}
-                placeholder="000.000.000-00" className="h-9 text-sm" />
+                placeholder="000.000.000-00"
+                className="h-9 text-sm"
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">RG</Label>
-              <Input value={form.rg}
+              <Input
+                value={form.rg}
                 onChange={(e) => setForm((f) => ({ ...f, rg: e.target.value }))}
-                className="h-9 text-sm" />
+                className="h-9 text-sm"
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Data de nascimento</Label>
-              <Input type="date" value={form.dataNascimento}
+              <Input
+                type="date"
+                value={form.dataNascimento}
                 onChange={(e) => setForm((f) => ({ ...f, dataNascimento: e.target.value }))}
-                className="h-9 text-sm" />
+                className="h-9 text-sm"
+              />
             </div>
 
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Telefone</Label>
-              <Input value={maskPhone(form.telefone)}
+              <Input
+                value={maskPhone(form.telefone)}
                 onChange={(e) => setForm((f) => ({ ...f, telefone: unmaskPhone(e.target.value) }))}
-                placeholder="(00) 00000-0000" className="h-9 text-sm" />
+                placeholder="(00) 00000-0000"
+                className="h-9 text-sm"
+              />
             </div>
 
             <div className="sm:col-span-2 flex flex-col gap-1.5">
               <Label className="text-xs">E-mail</Label>
-              <Input type="email" value={form.email}
+              <Input
+                type="email"
+                value={form.email}
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-                className="h-9 text-sm" />
+                className="h-9 text-sm"
+              />
             </div>
 
             <div className="sm:col-span-2 flex flex-col gap-1.5">
               <Label className="text-xs">Endereço</Label>
-              <Input value={form.endereco}
+              <Input
+                value={form.endereco}
                 onChange={(e) => setForm((f) => ({ ...f, endereco: e.target.value }))}
-                className="h-9 text-sm" />
+                className="h-9 text-sm"
+              />
             </div>
 
             <div className="sm:col-span-2 flex flex-col gap-1.5">
               <Label className="text-xs">Observações</Label>
-              <Input value={form.observacoes}
+              <Input
+                value={form.observacoes}
                 onChange={(e) => setForm((f) => ({ ...f, observacoes: e.target.value }))}
-                className="h-9 text-sm" />
+                className="h-9 text-sm"
+              />
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs">Viagem</Label>
-              <Select
-                value={form.viagemId ?? "none"}
-                onValueChange={(v) => setForm((f) => ({ ...f, viagemId: v === "none" ? null : v }))}
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue placeholder="Sem viagem" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Sem viagem</SelectItem>
-                  {viagensAtivas.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>{v.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="sm:col-span-2 flex flex-col gap-1.5">
+              <Label className="text-xs">Viagens</Label>
+              {viagensAtivas.length === 0 ? (
+                <p className="text-xs text-muted-foreground">Nenhuma viagem ativa.</p>
+              ) : (
+                <div className="flex flex-col gap-1.5 rounded-md border p-2 max-h-36 overflow-y-auto">
+                  {viagensAtivas.map((v) => {
+                    const marcado = form.viagemIds.includes(v.id)
+                    return (
+                      <label
+                        key={v.id}
+                        className="flex items-center gap-2 cursor-pointer rounded px-1 py-0.5 hover:bg-muted/40 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={marcado}
+                          onChange={() => {
+                            setForm((f) => {
+                              const ids = marcado
+                                ? f.viagemIds.filter((id) => id !== v.id)
+                                : [...f.viagemIds, v.id]
+                              return { ...f, viagemIds: ids, viagemId: ids[0] ?? null }
+                            })
+                          }}
+                          className="accent-primary"
+                        />
+                        <span className="font-medium">{v.nome}</span>
+                        {v.destino && (
+                          <span className="text-muted-foreground">— {v.destino}</span>
+                        )}
+                      </label>
+                    )
+                  })}
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Status</Label>
               <Select
                 value={form.status}
-                onValueChange={(v) => setForm((f) => ({ ...f, status: v as "pago" | "pendente" }))}
+                onValueChange={(v) =>
+                  setForm((f) => ({ ...f, status: v as Cliente["status"] }))
+                }
               >
                 <SelectTrigger className="h-9 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="a_confirmar">A confirmar</SelectItem>
                   <SelectItem value="pendente">Pendente</SelectItem>
                   <SelectItem value="pago">Pago</SelectItem>
                 </SelectContent>

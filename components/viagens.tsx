@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useRef } from "react"
 import { useStore } from "@/lib/store"
-import type { Viagem } from "@/lib/data"
-import { formatCurrency, formatDate, getValorPago } from "@/lib/data"
+import type { Viagem, Cliente } from "@/lib/data"
+import { formatCurrency, formatDate, formatCPF, formatDate as fmtDate, getValorPago } from "@/lib/data"
 import { StatusBadge, ViagemStatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,12 +21,62 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { Plus, Pencil, Trash2, MapPin, Calendar, Users, ChevronDown, AlertTriangle } from "lucide-react"
+import {
+  Plus, Pencil, Trash2, MapPin, Calendar, Users, ChevronDown,
+  AlertTriangle, FileText, Search, X, Plane, Bus, UserPlus,
+} from "lucide-react"
 import { toast } from "sonner"
+
+function fmtDataNasc(str: string) {
+  if (!str) return ""
+  return new Date(str + "T12:00:00").toLocaleDateString("pt-BR")
+}
+
+function limparCPF(cpf: string) {
+  return cpf.replace(/\D/g, "")
+}
+
+async function gerarWordViagem(viagem: Viagem, passageiros: Cliente[]) {
+  if (typeof window === "undefined" || !window.electronAPI?.gerarWord) {
+    toast.error("Função disponível apenas no aplicativo instalado")
+    return
+  }
+
+  const ordenados = [...passageiros].sort((a, b) =>
+    a.nomeCompleto.localeCompare(b.nomeCompleto, "pt-BR")
+  )
+
+  const dataViagem = viagem.dataIda
+    ? new Date(viagem.dataIda + "T12:00:00").toLocaleDateString("pt-BR")
+    : ""
+
+  const titulo = `${viagem.nome}${dataViagem ? ` ${dataViagem}` : ""}${viagem.destino ? ` ${viagem.destino}` : ""}`
+
+  const linhas = ordenados.map((c, i) => {
+    const cpf  = limparCPF(c.cpf)
+    const nome = c.nomeCompleto.toUpperCase()
+    if (viagem.tipo === "aviao") {
+      const nasc = c.dataNascimento ? fmtDataNasc(c.dataNascimento) : ""
+      return `${i + 1}. ${cpf} ${nome}${nasc ? ` ${nasc}` : ""}`
+    }
+    return `${i + 1}. ${cpf} ${nome}`
+  })
+
+  try {
+    const result = await window.electronAPI.gerarWord({ titulo, linhas })
+    if (result?.canceled) return
+    if (result?.success) toast.success("Arquivo Word salvo com sucesso!")
+    else toast.error(result?.error ?? "Erro ao gerar Word")
+  } catch {
+    toast.error("Erro inesperado ao gerar Word")
+  }
+}
+
+type TipoViagem = "onibus" | "aviao"
 
 const emptyViagem: Omit<Viagem, "id"> = {
   nome: "", destino: "", dataIda: "", dataVolta: "",
-  valorPorPessoa: 0, capacidade: 0, status: "ativa",
+  valorPorPessoa: 0, capacidade: 0, status: "ativa", tipo: "onibus",
 }
 
 interface FormErrors {
@@ -34,10 +84,165 @@ interface FormErrors {
   dataVolta?: string; valorPorPessoa?: string; capacidade?: string
 }
 
+function AdicionarPassageiro({
+  viagem,
+  passageirosAtuais,
+}: {
+  viagem: Viagem
+  passageirosAtuais: Cliente[]
+}) {
+  const { clientes, addClienteToViagem, removeClienteFromViagem, openFichaCliente } = useStore()
+  const [busca, setBusca] = useState("")
+  const [loading, setLoading] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  const idsNaViagem = new Set(passageirosAtuais.map((c) => c.id))
+
+  const resultados = useMemo(() => {
+    const q = busca.trim().toLowerCase()
+    if (!q) return []
+    return clientes
+      .filter((c) =>
+        c.nomeCompleto.toLowerCase().includes(q) ||
+        c.cpf.replace(/\D/g, "").includes(q.replace(/\D/g, ""))
+      )
+      .slice(0, 8)
+  }, [clientes, busca])
+
+  async function handleAdicionar(c: Cliente) {
+    if (idsNaViagem.has(c.id)) return
+    setLoading(c.id)
+    try {
+      await addClienteToViagem(c.id, viagem.id)
+      toast.success(`${c.nomeCompleto} adicionado à viagem`)
+      setBusca("")
+      inputRef.current?.focus()
+    } catch {
+      toast.error("Erro ao adicionar passageiro")
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  async function handleRemover(c: Cliente) {
+    setLoading(c.id)
+    try {
+      await removeClienteFromViagem(c.id, viagem.id)
+      toast.success(`${c.nomeCompleto} removido da viagem`)
+    } catch {
+      toast.error("Erro ao remover passageiro")
+    } finally {
+      setLoading(null)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3 border-t pt-3">
+      <div className="relative">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+        <Input
+          ref={inputRef}
+          value={busca}
+          onChange={(e) => setBusca(e.target.value)}
+          placeholder="Buscar passageiro pelo nome ou CPF…"
+          className="pl-8 pr-8"
+        />
+        {busca && (
+          <button
+            onClick={() => setBusca("")}
+            className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+
+      {busca.trim() && (
+        <div className="flex flex-col gap-1 rounded-md border bg-background shadow-sm">
+          {resultados.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-muted-foreground">
+              Nenhum cliente encontrado. Cadastre-o na aba Clientes.
+            </p>
+          ) : (
+            resultados.map((c) => {
+              const jaEsta = idsNaViagem.has(c.id)
+              return (
+                <div
+                  key={c.id}
+                  className="flex items-center justify-between gap-2 px-3 py-2 text-sm hover:bg-muted/60 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{c.nomeCompleto}</p>
+                    {c.cpf && (
+                      <p className="text-xs text-muted-foreground">{formatCPF(c.cpf)}</p>
+                    )}
+                  </div>
+                  {jaEsta ? (
+                    <Badge variant="secondary" className="text-xs shrink-0">
+                      Já na viagem
+                    </Badge>
+                  ) : (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 shrink-0 gap-1"
+                      disabled={loading === c.id}
+                      onClick={() => handleAdicionar(c)}
+                    >
+                      <UserPlus className="h-3.5 w-3.5" />
+                      Adicionar
+                    </Button>
+                  )}
+                </div>
+              )
+            })
+          )}
+        </div>
+      )}
+
+      {passageirosAtuais.length > 0 && (
+        <div className="flex flex-col gap-1">
+          {passageirosAtuais.map((c) => (
+            <div
+              key={c.id}
+              className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm"
+            >
+              <span
+                className="font-medium cursor-pointer hover:underline"
+                onClick={() => openFichaCliente(c.id)}
+              >
+                {c.nomeCompleto}
+              </span>
+              <div className="flex items-center gap-2">
+                <StatusBadge status={c.status} />
+                <button
+                  onClick={() => handleRemover(c)}
+                  disabled={loading === c.id}
+                  className="text-muted-foreground hover:text-destructive transition-colors ml-1"
+                  title="Remover da viagem"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {passageirosAtuais.length === 0 && !busca && (
+        <p className="text-xs text-muted-foreground text-center py-1">
+          Nenhum passageiro nesta viagem. Use a busca acima para adicionar.
+        </p>
+      )}
+    </div>
+  )
+}
+
 export function Viagens() {
   const {
     viagens, clientes, pagamentos,
-    addViagem, updateViagem, deleteViagem, getClientesByViagem, openFichaCliente,
+    addViagem, updateViagem, deleteViagem,
+    getClientesByViagem, openFichaCliente,
   } = useStore()
 
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -46,18 +251,28 @@ export function Viagens() {
   const [errors,     setErrors]     = useState<FormErrors>({})
   const [deleteId,   setDeleteId]   = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [expandMode, setExpandMode] = useState<"passageiros" | "adicionar">("passageiros")
 
   function openCreate() {
     setEditingId(null); setForm(emptyViagem); setErrors({}); setDialogOpen(true)
   }
-  function openEdit(viagem: Viagem) {
-    setEditingId(viagem.id)
+  function openEdit(v: Viagem) {
+    setEditingId(v.id)
     setForm({
-      nome: viagem.nome, destino: viagem.destino, dataIda: viagem.dataIda,
-      dataVolta: viagem.dataVolta, valorPorPessoa: viagem.valorPorPessoa,
-      capacidade: viagem.capacidade ?? 0, status: viagem.status,
+      nome: v.nome, destino: v.destino, dataIda: v.dataIda,
+      dataVolta: v.dataVolta, valorPorPessoa: v.valorPorPessoa,
+      capacidade: v.capacidade ?? 0, status: v.status, tipo: v.tipo ?? "onibus",
     })
     setErrors({}); setDialogOpen(true)
+  }
+
+  function toggleExpand(id: string, mode: "passageiros" | "adicionar") {
+    if (expandedId === id && expandMode === mode) {
+      setExpandedId(null)
+    } else {
+      setExpandedId(id)
+      setExpandMode(mode)
+    }
   }
 
   function validate(): boolean {
@@ -65,7 +280,6 @@ export function Viagens() {
     if (!form.nome.trim())    e.nome    = "Nome da viagem é obrigatório"
     if (!form.destino.trim()) e.destino = "Destino é obrigatório"
     if (!form.dataIda)        e.dataIda = "Data de ida é obrigatória"
-    if (!form.dataVolta)      e.dataVolta = "Data de volta é obrigatória"
     if (form.dataIda && form.dataVolta && form.dataVolta < form.dataIda)
       e.dataVolta = "Data de volta deve ser após a data de ida"
     if (!form.valorPorPessoa || form.valorPorPessoa <= 0)
@@ -91,30 +305,30 @@ export function Viagens() {
     setForm((prev) => ({ ...prev, [field]: value }))
   }
 
-  function handleCapacidadeChange(raw: string) {
-    const val = parseInt(raw)
-    if (isNaN(val) || val < 0) {
-      upd("capacidade", 0)
-    } else {
-      upd("capacidade", val)
-    }
-  }
-
   const viagemStats = useMemo(() => {
     const map: Record<string, {
       total: number; pagos: number; pendentes: number; aConfirmar: number;
       arrecadado: number; valorTotal: number
     }> = {}
     for (const v of viagens) {
-      const vC = clientes.filter((c) => c.viagemId === v.id)
+      const vC = clientes.filter((c) => (c.viagemIds ?? [c.viagemId].filter(Boolean)).includes(v.id))
       const vP = pagamentos.filter((p) => p.viagemId === v.id)
+      let pagos = 0, pendentes = 0, aConfirmar = 0
+      for (const c of vC) {
+        const pag = vP.find((p) => p.clienteId === c.id)
+        const valorPago = pag ? getValorPago(pag) : 0
+        const total     = pag ? pag.valorTotal : 0
+        if      (valorPago <= 0)     aConfirmar++
+        else if (valorPago >= total) pagos++
+        else                         pendentes++
+      }
       map[v.id] = {
-        total:       vC.length,
-        pagos:       vC.filter((c) => c.status === "pago").length,
-        pendentes:   vC.filter((c) => c.status === "pendente").length,
-        aConfirmar:  vC.filter((c) => c.status === "a_confirmar").length,
-        arrecadado:  vP.reduce((s, p) => s + getValorPago(p), 0),
-        valorTotal:  vP.reduce((s, p) => s + p.valorTotal, 0),
+        total:      vC.length,
+        pagos,
+        pendentes,
+        aConfirmar,
+        arrecadado: vP.reduce((s, p) => s + getValorPago(p), 0),
+        valorTotal: vP.reduce((s, p) => s + p.valorTotal, 0),
       }
     }
     return map
@@ -138,19 +352,22 @@ export function Viagens() {
           const temCap      = capacidade > 0
           const lotada      = temCap && confirmados >= capacidade
           const quaseLotada = temCap && !lotada && confirmados >= capacidade * 0.9
-
           const pctOcup     = temCap ? Math.min((confirmados / capacidade) * 100, 100) : null
           const vagasLivres = temCap ? capacidade - confirmados : null
           const linkedCli   = getClientesByViagem(v.id)
           const isExpanded  = expandedId === v.id
+          const TipoIcon    = v.tipo === "aviao" ? Plane : Bus
 
           return (
             <Card key={v.id}>
               <CardHeader className="flex flex-row items-start justify-between gap-2 pb-3">
-                <div className="flex flex-col gap-1">
-                  <CardTitle className="text-base font-semibold text-card-foreground">
-                    {v.nome}
-                  </CardTitle>
+                <div className="flex flex-col gap-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <TipoIcon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <CardTitle className="text-base font-semibold text-card-foreground truncate">
+                      {v.nome}
+                    </CardTitle>
+                  </div>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <MapPin className="h-3.5 w-3.5" />{v.destino}
@@ -161,14 +378,24 @@ export function Viagens() {
                     </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
+
+                <div className="flex items-center gap-1 shrink-0">
                   <ViagemStatusBadge status={v.status} />
+                  <Button
+                    variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                    title={`Gerar lista Word (${v.tipo === "aviao" ? "avião" : "ônibus"})`}
+                    onClick={() => gerarWordViagem(v, linkedCli)}
+                  >
+                    <FileText className="h-4 w-4" />
+                  </Button>
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(v)}>
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon"
+                  <Button
+                    variant="ghost" size="icon"
                     className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                    onClick={() => setDeleteId(v.id)}>
+                    onClick={() => setDeleteId(v.id)}
+                  >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
@@ -184,9 +411,7 @@ export function Viagens() {
                       </span>
                       <div className="flex items-center gap-2">
                         {lotada && (
-                          <Badge variant="destructive" className="text-xs px-1.5 py-0">
-                            Lotada
-                          </Badge>
+                          <Badge variant="destructive" className="text-xs px-1.5 py-0">Lotada</Badge>
                         )}
                         {quaseLotada && (
                           <Badge className="text-xs px-1.5 py-0 bg-amber-500/15 text-amber-600 border-amber-300">
@@ -228,19 +453,28 @@ export function Viagens() {
                     <span className="text-emerald-600 font-medium">{st?.pagos ?? 0} pagos</span>
                     <span className="text-muted-foreground">·</span>
                     <span className="text-amber-600 font-medium">{st?.pendentes ?? 0} pendentes</span>
-                    {(st?.aConfirmar ?? 0) > 0 && (
-                      <>
-                        <span className="text-muted-foreground">·</span>
-                        <span className="text-slate-500 font-medium">{st.aConfirmar} a confirmar</span>
-                      </>
-                    )}
+                    <span className="text-muted-foreground">·</span>
+                    <span className="text-slate-500 font-medium">{st?.aConfirmar ?? 0} a confirmar</span>
+                  </div>
+                )}
+
+                {temCap && (st?.pagos ?? 0) + (st?.pendentes ?? 0) + (st?.aConfirmar ?? 0) > 0 && (
+                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <span className="text-emerald-600 font-medium">{st?.pagos ?? 0} pagos</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span className="text-amber-600 font-medium">{st?.pendentes ?? 0} pendentes</span>
+                    <span className="text-muted-foreground">·</span>
+                    <span className="text-slate-500 font-medium">{st?.aConfirmar ?? 0} a confirmar</span>
                   </div>
                 )}
 
                 <div className="flex flex-col gap-1.5">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">
-                      Valor/pessoa: <span className="font-medium text-card-foreground">{formatCurrency(v.valorPorPessoa)}</span>
+                      Valor/pessoa:{" "}
+                      <span className="font-medium text-card-foreground">
+                        {formatCurrency(v.valorPorPessoa)}
+                      </span>
                     </span>
                     <span className="text-muted-foreground">
                       {formatCurrency(st?.arrecadado ?? 0)} / {formatCurrency(st?.valorTotal ?? 0)}
@@ -249,25 +483,49 @@ export function Viagens() {
                   <Progress value={pctFinanc} className="h-2" />
                 </div>
 
-                {linkedCli.length > 0 && (
-                  <Button variant="ghost" size="sm"
-                    className="w-full justify-between text-muted-foreground hover:text-card-foreground"
-                    onClick={() => setExpandedId(isExpanded ? null : v.id)}>
-                    <span>Ver clientes ({linkedCli.length})</span>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost" size="sm"
+                    className="flex-1 justify-between text-muted-foreground hover:text-card-foreground"
+                    onClick={() => toggleExpand(v.id, "passageiros")}
+                  >
+                    <span>Ver passageiros ({linkedCli.length})</span>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${
+                      isExpanded && expandMode === "passageiros" ? "rotate-180" : ""
+                    }`} />
                   </Button>
-                )}
-                {isExpanded && linkedCli.length > 0 && (
+                  <Button
+                    variant="outline" size="sm"
+                    className="gap-1.5 shrink-0"
+                    onClick={() => toggleExpand(v.id, "adicionar")}
+                  >
+                    <UserPlus className="h-3.5 w-3.5" />
+                    Adicionar
+                  </Button>
+                </div>
+
+                {isExpanded && expandMode === "passageiros" && linkedCli.length > 0 && (
                   <div className="flex flex-col gap-1.5 border-t pt-3">
                     {linkedCli.map((c) => (
-                      <div key={c.id}
+                      <div
+                        key={c.id}
                         className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm cursor-pointer hover:bg-muted transition-colors"
-                        onClick={() => openFichaCliente(c.id)}>
+                        onClick={() => openFichaCliente(c.id)}
+                      >
                         <span className="font-medium text-card-foreground">{c.nomeCompleto}</span>
                         <StatusBadge status={c.status} />
                       </div>
                     ))}
                   </div>
+                )}
+
+                {isExpanded && expandMode === "passageiros" && linkedCli.length === 0 && (
+                  <p className="text-xs text-muted-foreground text-center py-2 border-t pt-3">
+                    Nenhum passageiro ainda.
+                  </p>
+                )}
+                {isExpanded && expandMode === "adicionar" && (
+                  <AdicionarPassageiro viagem={v} passageirosAtuais={linkedCli} />
                 )}
               </CardContent>
             </Card>
@@ -289,7 +547,39 @@ export function Viagens() {
               {editingId ? "Atualize os dados da viagem abaixo." : "Preencha os campos para criar a viagem."}
             </DialogDescription>
           </DialogHeader>
+
           <div className="grid gap-4 py-2">
+            <div className="grid gap-2">
+              <Label>Tipo de transporte *</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {(["onibus", "aviao"] as TipoViagem[]).map((tipo) => {
+                  const Icon    = tipo === "aviao" ? Plane : Bus
+                  const label   = tipo === "aviao" ? "Avião" : "Ônibus"
+                  const ativo   = form.tipo === tipo
+                  return (
+                    <button
+                      key={tipo}
+                      type="button"
+                      onClick={() => upd("tipo", tipo)}
+                      className={`flex items-center justify-center gap-2 rounded-lg border-2 py-3 text-sm font-medium transition-all ${
+                        ativo
+                          ? "border-primary bg-primary/5 text-primary"
+                          : "border-border bg-card text-muted-foreground hover:border-primary/40 hover:bg-accent"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4" />
+                      {label}
+                    </button>
+                  )
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {form.tipo === "aviao"
+                  ? "Relatório Word incluirá nome, CPF e data de nascimento."
+                  : "Relatório Word incluirá nome e CPF."}
+              </p>
+            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="vnome">Nome da viagem *</Label>
               <Input id="vnome" value={form.nome}
@@ -298,6 +588,7 @@ export function Viagens() {
                 className={errors.nome ? "border-destructive" : ""} />
               {errors.nome && <p className="text-xs text-destructive">{errors.nome}</p>}
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="vdest">Destino *</Label>
               <Input id="vdest" value={form.destino}
@@ -306,6 +597,7 @@ export function Viagens() {
                 className={errors.destino ? "border-destructive" : ""} />
               {errors.destino && <p className="text-xs text-destructive">{errors.destino}</p>}
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="vida">Data de ida *</Label>
@@ -322,6 +614,7 @@ export function Viagens() {
                 {errors.dataVolta && <p className="text-xs text-destructive">{errors.dataVolta}</p>}
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="vvalor">Valor por pessoa (R$) *</Label>
@@ -335,17 +628,17 @@ export function Viagens() {
                 <Label htmlFor="vcap">Capacidade (vagas)</Label>
                 <Input id="vcap" type="number" min={0} step={1}
                   value={form.capacidade === 0 ? "" : form.capacidade}
-                  onChange={(e) => handleCapacidadeChange(e.target.value)}
-                  onBlur={(e) => {
+                  onChange={(e) => {
                     const val = parseInt(e.target.value)
-                    if (isNaN(val) || val < 0) upd("capacidade", 0)
+                    upd("capacidade", isNaN(val) || val < 0 ? 0 : val)
                   }}
                   placeholder="0 = sem limite"
                   className={errors.capacidade ? "border-destructive" : ""} />
-                <p className="text-xs text-muted-foreground">0 = sem limite definido</p>
+                <p className="text-xs text-muted-foreground">0 = sem limite</p>
                 {errors.capacidade && <p className="text-xs text-destructive">{errors.capacidade}</p>}
               </div>
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="vstatus">Status</Label>
               <Select value={form.status} onValueChange={(v) => upd("status", v)}>
@@ -357,6 +650,7 @@ export function Viagens() {
               </Select>
             </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
             <Button onClick={handleSave}>{editingId ? "Salvar" : "Criar Viagem"}</Button>
@@ -369,13 +663,15 @@ export function Viagens() {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza? Os clientes vinculados serão desvinculados e os pagamentos removidos.
+              Tem certeza? Os clientes vinculados serão desvinculados e os pagamentos sem valor pago serão removidos.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={handleDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               Excluir
             </AlertDialogAction>
           </AlertDialogFooter>
