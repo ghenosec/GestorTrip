@@ -24,6 +24,7 @@ interface StoreContextType {
   deletePagamento: (id: string) => Promise<void>
   addClienteToViagem: (clienteId: string, viagemId: string) => Promise<void>
   removeClienteFromViagem: (clienteId: string, viagemId: string) => Promise<void>
+  updateStatusClienteViagem: (clienteId: string, viagemId: string, status: "pago" | "pendente" | "a_confirmar") => Promise<void>
   getClientesByViagem: (viagemId: string) => Cliente[]
   getPagamentoByCliente: (clienteId: string, viagemId?: string) => Pagamento | undefined
   getViagemById: (viagemId: string) => Viagem | undefined
@@ -56,9 +57,16 @@ function rowToCliente(row: Record<string, unknown>): Cliente {
       viagemIds = raw.map(String)
     }
   } catch { viagemIds = [] }
+
   if (viagemIds.length === 0 && row.viagem_id) {
     viagemIds = [String(row.viagem_id)]
   }
+
+  let viagemStatus: Record<string, "pago" | "pendente" | "a_confirmar"> = {}
+  try {
+    const raw = row.viagem_status
+    if (typeof raw === "string" && raw) viagemStatus = JSON.parse(raw)
+  } catch { viagemStatus = {} }
 
   return {
     id: String(row.id),
@@ -71,6 +79,7 @@ function rowToCliente(row: Record<string, unknown>): Cliente {
     endereco: String(row.endereco ?? ""),
     observacoes: String(row.observacoes ?? ""),
     viagemIds,
+    viagemStatus,
     viagemId: viagemIds[0] ?? null,
     status: (row.status as "pago" | "pendente" | "a_confirmar") ?? "a_confirmar",
   }
@@ -190,6 +199,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       observacoes:     data.observacoes,
       status:          data.status,
     }
+
     if (data.viagemIds !== undefined) {
       payload.viagem_ids = data.viagemIds
     } else if (data.viagemId !== undefined) {
@@ -217,7 +227,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       setClientes((prev) => prev.map((c) => {
         if (c.id !== clienteId) return c
         const ids = [...new Set([...(c.viagemIds ?? []), viagemId])]
-        return { ...c, viagemIds: ids, viagemId: ids[0] ?? null }
+        return { ...c, viagemIds: ids, viagemId: ids[0] ?? null, viagemStatus: { ...(c.viagemStatus ?? {}), [viagemId]: "a_confirmar" } }
       }))
       return
     }
@@ -384,6 +394,27 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     await reloadAll()
   }, [reloadAll])
 
+  const updateStatusClienteViagem = useCallback(
+    async (clienteId: string, viagemId: string, status: "pago" | "pendente" | "a_confirmar") => {
+      const userId = getUserId()
+      if (!hasElectron()) {
+        setClientes((prev) => prev.map((c) => {
+          if (c.id !== clienteId) return c
+          return {
+            ...c,
+            viagemStatus: { ...(c.viagemStatus ?? {}), [viagemId]: status },
+          }
+        }))
+        return
+      }
+      await window.electronAPI.updateStatusClienteViagem(
+        Number(clienteId), Number(viagemId), userId, status
+      )
+      await reloadAll()
+    },
+    [reloadAll]
+  )
+
   const getClientesByViagem = useCallback(
     (viagemId: string) =>
       clientes.filter((c) => (c.viagemIds ?? [c.viagemId].filter(Boolean)).includes(viagemId)),
@@ -406,7 +437,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addCliente, updateCliente, deleteCliente,
     addViagem, updateViagem, deleteViagem,
     addPagamento, addPagamentoHistorico, deletePagamento,
-    addClienteToViagem, removeClienteFromViagem,
+    addClienteToViagem, removeClienteFromViagem, updateStatusClienteViagem,
     getClientesByViagem, getPagamentoByCliente, getViagemById, getClienteById,
     reloadAll,
     openFichaCliente, fichaClienteId, closeFichaCliente,
@@ -415,7 +446,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     addCliente, updateCliente, deleteCliente,
     addViagem, updateViagem, deleteViagem,
     addPagamento, addPagamentoHistorico, deletePagamento,
-    addClienteToViagem, removeClienteFromViagem,
+    addClienteToViagem, removeClienteFromViagem, updateStatusClienteViagem,
     getClientesByViagem, getPagamentoByCliente, getViagemById, getClienteById,
     reloadAll,
     openFichaCliente, fichaClienteId, closeFichaCliente,
