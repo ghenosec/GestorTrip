@@ -52,6 +52,7 @@ db.exec(`
     cliente_id INTEGER NOT NULL,
     viagem_id  INTEGER NOT NULL,
     user_id    INTEGER NOT NULL,
+    status     TEXT DEFAULT 'a_confirmar',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     UNIQUE(cliente_id, viagem_id),
     FOREIGN KEY (cliente_id) REFERENCES clientes(id) ON DELETE CASCADE,
@@ -75,16 +76,25 @@ db.exec(`
 ;[
   "ALTER TABLE viagens ADD COLUMN capacidade INTEGER DEFAULT 0",
   "ALTER TABLE viagens ADD COLUMN tipo TEXT DEFAULT 'onibus'",
+  "ALTER TABLE cliente_viagens ADD COLUMN status TEXT DEFAULT 'a_confirmar'",
 ].forEach(sql => { try { db.exec(sql) } catch (_) {} })
 
 try {
   const rows = db.prepare(
-    "SELECT id, viagem_id, user_id FROM clientes WHERE viagem_id IS NOT NULL"
+    "SELECT id, viagem_id, user_id, status FROM clientes WHERE viagem_id IS NOT NULL"
   ).all()
   const ins = db.prepare(
     "INSERT OR IGNORE INTO cliente_viagens (cliente_id, viagem_id, user_id) VALUES (?, ?, ?)"
   )
-  for (const row of rows) ins.run(row.id, row.viagem_id, row.user_id)
+  const updStatus = db.prepare(
+    "UPDATE cliente_viagens SET status=? WHERE cliente_id=? AND viagem_id=? AND status='a_confirmar'"
+  )
+  for (const row of rows) {
+    ins.run(row.id, row.viagem_id, row.user_id)
+    if (row.status && row.status !== 'a_confirmar') {
+      updStatus.run(row.status, row.id, row.viagem_id)
+    }
+  }
 } catch (_) {}
 
 function getDbPath() { return dbPath }
@@ -185,11 +195,22 @@ function getClientes(userId) {
     cvMap[row.cliente_id].push(String(row.viagem_id))
   }
 
+  const allCvStatus = db.prepare(
+    "SELECT cliente_id, viagem_id, status FROM cliente_viagens WHERE user_id=?"
+  ).all(userId)
+
+  const cvStatusMap = {}
+  for (const row of allCvStatus) {
+    if (!cvStatusMap[row.cliente_id]) cvStatusMap[row.cliente_id] = {}
+    cvStatusMap[row.cliente_id][String(row.viagem_id)] = row.status ?? 'a_confirmar'
+  }
+
   return clientes.map(c => ({
     ...c,
     viagem_ids: JSON.stringify(
       cvMap[c.id] ?? (c.viagem_id ? [String(c.viagem_id)] : [])
     ),
+    viagem_status: JSON.stringify(cvStatusMap[c.id] ?? {}),
   }))
 }
 
@@ -408,11 +429,19 @@ function deletePagamento(id, userId) {
   return { success: true }
 }
 
+function updateStatusClienteViagem(clienteId, viagemId, userId, status) {
+  db.prepare(
+    "UPDATE cliente_viagens SET status=? WHERE cliente_id=? AND viagem_id=?"
+  ).run(status, clienteId, viagemId)
+  return { success: true }
+}
+
 module.exports = {
   getDbPath, backup, close,
   isFirstAccess, registerUser, loginUser,
   getViagens, createViagem, updateViagem, deleteViagem,
   getClientes, createCliente, updateCliente, deleteCliente,
   addClienteToViagem, removeClienteFromViagem,
+  updateStatusClienteViagem,
   getPagamentos, createPagamento, updatePagamento, deletePagamento,
 }
