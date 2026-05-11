@@ -341,7 +341,6 @@ app.whenReady().then(() => {
                   }),
                 ],
               }),
-
               ...linhas.map(
                 (linha) =>
                   new Paragraph({
@@ -439,6 +438,10 @@ app.whenReady().then(() => {
   ipcMain.handle("clientes:create", (_, userId, data)     => db.createCliente(userId, data))
   ipcMain.handle("clientes:update", (_, id, userId, data) => db.updateCliente(id, userId, data))
   ipcMain.handle("clientes:delete", (_, id, userId)       => db.deleteCliente(id, userId))
+
+  ipcMain.handle("clientes:updateStatusViagem", (_, clienteId, viagemId, userId, status) =>
+    db.updateStatusClienteViagem(clienteId, viagemId, userId, status)
+  )
 
   ipcMain.handle("clientes:addToViagem",     (_, clienteId, viagemId, userId) =>
     db.addClienteToViagem(clienteId, viagemId, userId)
