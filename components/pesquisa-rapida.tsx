@@ -12,11 +12,10 @@ import { Badge } from "@/components/ui/badge"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog"
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select"
 import { Search, User, Phone, Mail, MapPin, FileText, Pencil } from "lucide-react"
 import type { Cliente } from "@/lib/data"
+
+type ClienteEditForm = Omit<Cliente, "id" | "status">
 
 export function PesquisaRapida() {
   const { clientes, viagens, getViagemById, updateCliente } = useStore()
@@ -24,12 +23,12 @@ export function PesquisaRapida() {
   const [editing, setEditing] = useState<Cliente | null>(null)
   const [saving,  setSaving]  = useState(false)
 
-  const [form, setForm] = useState<Omit<Cliente, "id">>({
+  const [form, setForm] = useState<ClienteEditForm>({
     nomeCompleto: "", cpf: "", rg: "", dataNascimento: "",
     telefone: "", email: "", endereco: "", observacoes: "",
     viagemIds: [],
     viagemId: null,
-    status: "pendente",
+    viagemStatus: {},
   })
 
   const results = useMemo(() => {
@@ -54,7 +53,7 @@ export function PesquisaRapida() {
       observacoes:    c.observacoes,
       viagemIds:      c.viagemIds ?? (c.viagemId ? [c.viagemId] : []),
       viagemId:       c.viagemId,
-      status:         c.status,
+      viagemStatus:   c.viagemStatus ?? {},
     })
     setEditing(c)
   }
@@ -262,7 +261,6 @@ export function PesquisaRapida() {
                 className="h-9 text-sm"
               />
             </div>
-
             <div className="sm:col-span-2 flex flex-col gap-1.5">
               <Label className="text-xs">Viagens</Label>
               {viagensAtivas.length === 0 ? (
@@ -300,24 +298,6 @@ export function PesquisaRapida() {
               )}
             </div>
 
-            <div className="flex flex-col gap-1.5">
-              <Label className="text-xs">Status</Label>
-              <Select
-                value={form.status}
-                onValueChange={(v) =>
-                  setForm((f) => ({ ...f, status: v as Cliente["status"] }))
-                }
-              >
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="a_confirmar">A confirmar</SelectItem>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="pago">Pago</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           <DialogFooter className="gap-2">

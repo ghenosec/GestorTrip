@@ -350,7 +350,6 @@ function EditClienteDialog({
     endereco:         cliente.endereco,
     observacoes:      cliente.observacoes,
     viagemId:         cliente.viagemId,
-    status:           cliente.status as "pago" | "pendente" | "a_confirmar",
   })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -359,11 +358,9 @@ function EditClienteDialog({
     const e: Record<string, string> = {}
     if (!form.nomeCompleto.trim())              e.nomeCompleto = "Nome é obrigatório"
     else if (!isValidName(form.nomeCompleto))   e.nomeCompleto = "Nome não pode conter números"
-    if (!form.cpf || form.cpf.length !== 11)    e.cpf = "CPF inválido"
-    else if (!isValidCPF(form.cpf))             e.cpf = "CPF inválido"
-    if (!form.dataNascimento) {
-      e.dataNascimento = "Data de nascimento é obrigatória"
-    } else {
+    if (form.cpf && form.cpf.length !== 11)     e.cpf = "CPF inválido"
+    else if (form.cpf && !isValidCPF(form.cpf)) e.cpf = "CPF inválido"
+    if (form.dataNascimento) {
       const nasc = new Date(form.dataNascimento + "T12:00:00")
       const hoje = new Date(); hoje.setHours(0, 0, 0, 0)
       const minDate = new Date(); minDate.setFullYear(minDate.getFullYear() - 120)
@@ -373,7 +370,7 @@ function EditClienteDialog({
         e.dataNascimento = "Data de nascimento inválida"
       }
     }
-    if (!form.telefone || form.telefone.length < 10) e.telefone = "Telefone inválido"
+    if (form.telefone && form.telefone.length < 10) e.telefone = "Telefone inválido"
     if (form.email && !isValidEmail(form.email)) e.email = "Email inválido"
     if (!form.endereco.trim())                  e.endereco = "Endereço é obrigatório"
     setErrors(e)
@@ -392,7 +389,6 @@ function EditClienteDialog({
       endereco:       form.endereco.trim(),
       observacoes:    form.observacoes.trim(),
       viagemId:       form.viagemId,
-      status:         form.status,
     })
     toast.success("Cliente atualizado com sucesso")
     onClose()
@@ -422,7 +418,7 @@ function EditClienteDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label>CPF *</Label>
+              <Label>CPF</Label>
               <Input value={form.cpfDisplay}
                 onChange={(e) => {
                   const raw = unmaskCPF(e.target.value)
@@ -441,7 +437,7 @@ function EditClienteDialog({
 
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
-              <Label>Data de nascimento *</Label>
+              <Label>Data de nascimento</Label>
               <Input type="date"
                 max={getMaxNascimento()}
                 min={getMinNascimento()}
@@ -451,7 +447,7 @@ function EditClienteDialog({
               {errors.dataNascimento && <p className="text-xs text-destructive">{errors.dataNascimento}</p>}
             </div>
             <div className="grid gap-2">
-              <Label>Telefone *</Label>
+              <Label>Telefone</Label>
               <Input value={form.telefoneDisplay}
                 onChange={(e) => {
                   const raw = unmaskPhone(e.target.value)
@@ -479,32 +475,18 @@ function EditClienteDialog({
             {errors.endereco && <p className="text-xs text-destructive">{errors.endereco}</p>}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="grid gap-2">
-              <Label>Viagem vinculada</Label>
-              <Select value={form.viagemId ?? "none"}
-                onValueChange={(v) => setForm((p) => ({ ...p, viagemId: v === "none" ? null : v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nenhuma</SelectItem>
-                  {viagens.map((v) => (
-                    <SelectItem key={v.id} value={v.id}>{v.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid gap-2">
-              <Label>Status</Label>
-              <Select value={form.status}
-                onValueChange={(v) => setForm((p) => ({ ...p, status: v as "pago" | "pendente" | "a_confirmar" }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="a_confirmar">A confirmar</SelectItem>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="pago">Pago</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="grid gap-2">
+            <Label>Viagem vinculada</Label>
+            <Select value={form.viagemId ?? "none"}
+              onValueChange={(v) => setForm((p) => ({ ...p, viagemId: v === "none" ? null : v }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhuma</SelectItem>
+                {viagens.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>{v.nome}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid gap-2">
