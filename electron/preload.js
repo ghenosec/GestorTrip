@@ -38,6 +38,9 @@ contextBridge.exposeInMainWorld("electronAPI", {
   updateCliente: (id, userId, data) => ipcRenderer.invoke("clientes:update", id, userId, data),
   deleteCliente: (id, userId)       => ipcRenderer.invoke("clientes:delete", id, userId),
 
+  updateStatusClienteViagem: (clienteId, viagemId, userId, status) =>
+    ipcRenderer.invoke("clientes:updateStatusViagem", clienteId, viagemId, userId, status),
+
   addClienteToViagem:     (clienteId, viagemId, userId) =>
     ipcRenderer.invoke("clientes:addToViagem", clienteId, viagemId, userId),
   removeClienteFromViagem: (clienteId, viagemId, userId) =>
