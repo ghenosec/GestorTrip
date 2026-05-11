@@ -4,7 +4,7 @@ import { useState, useMemo, useRef } from "react"
 import { useStore } from "@/lib/store"
 import type { Viagem, Cliente } from "@/lib/data"
 import { formatCurrency, formatDate, formatCPF, formatDate as fmtDate, getValorPago } from "@/lib/data"
-import { StatusBadge, ViagemStatusBadge } from "@/components/status-badge"
+import { ViagemStatusBadge } from "@/components/status-badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -91,7 +91,7 @@ function AdicionarPassageiro({
   viagem: Viagem
   passageirosAtuais: Cliente[]
 }) {
-  const { clientes, addClienteToViagem, removeClienteFromViagem, openFichaCliente } = useStore()
+  const { clientes, addClienteToViagem, removeClienteFromViagem, openFichaCliente, updateStatusClienteViagem } = useStore()
   const [busca, setBusca] = useState("")
   const [loading, setLoading] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -202,30 +202,57 @@ function AdicionarPassageiro({
 
       {passageirosAtuais.length > 0 && (
         <div className="flex flex-col gap-1">
-          {passageirosAtuais.map((c) => (
-            <div
-              key={c.id}
-              className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm"
-            >
-              <span
-                className="font-medium cursor-pointer hover:underline"
-                onClick={() => openFichaCliente(c.id)}
+          {passageirosAtuais.map((c) => {
+            const statusAtual = c.viagemStatus?.[viagem.id] ?? "a_confirmar"
+            return (
+              <div
+                key={c.id}
+                className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm gap-2"
               >
-                {c.nomeCompleto}
-              </span>
-              <div className="flex items-center gap-2">
-                <StatusBadge status={c.status} />
-                <button
-                  onClick={() => handleRemover(c)}
-                  disabled={loading === c.id}
-                  className="text-muted-foreground hover:text-destructive transition-colors ml-1"
-                  title="Remover da viagem"
+                <span
+                  className="font-medium cursor-pointer hover:underline truncate flex-1"
+                  onClick={() => openFichaCliente(c.id)}
                 >
-                  <X className="h-3.5 w-3.5" />
-                </button>
+                  {c.nomeCompleto}
+                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <select
+                    value={statusAtual}
+                    disabled={loading === c.id}
+                    onChange={async (e) => {
+                      setLoading(c.id)
+                      try {
+                        await updateStatusClienteViagem(
+                          c.id, viagem.id,
+                          e.target.value as "pago" | "pendente" | "a_confirmar"
+                        )
+                      } finally { setLoading(null) }
+                    }}
+                    className={[
+                      "rounded-full px-2 py-0.5 text-xs font-semibold border-0 outline-none cursor-pointer",
+                      statusAtual === "pago"
+                        ? "bg-emerald-100 text-emerald-800"
+                        : statusAtual === "pendente"
+                          ? "bg-amber-100 text-amber-800"
+                          : "bg-slate-100 text-slate-600",
+                    ].join(" ")}
+                  >
+                    <option value="a_confirmar">A confirmar</option>
+                    <option value="pendente">Pendente</option>
+                    <option value="pago">Pago</option>
+                  </select>
+                  <button
+                    onClick={() => handleRemover(c)}
+                    disabled={loading === c.id}
+                    className="text-muted-foreground hover:text-destructive transition-colors"
+                    title="Remover da viagem"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
@@ -242,7 +269,7 @@ export function Viagens() {
   const {
     viagens, clientes, pagamentos,
     addViagem, updateViagem, deleteViagem,
-    getClientesByViagem, openFichaCliente,
+    getClientesByViagem, openFichaCliente, updateStatusClienteViagem,
   } = useStore()
 
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -252,6 +279,7 @@ export function Viagens() {
   const [deleteId,   setDeleteId]   = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [expandMode, setExpandMode] = useState<"passageiros" | "adicionar">("passageiros")
+  const [statusLoading, setStatusLoading] = useState<string | null>(null)
 
   function openCreate() {
     setEditingId(null); setForm(emptyViagem); setErrors({}); setDialogOpen(true)
@@ -315,12 +343,10 @@ export function Viagens() {
       const vP = pagamentos.filter((p) => p.viagemId === v.id)
       let pagos = 0, pendentes = 0, aConfirmar = 0
       for (const c of vC) {
-        const pag = vP.find((p) => p.clienteId === c.id)
-        const valorPago = pag ? getValorPago(pag) : 0
-        const total     = pag ? pag.valorTotal : 0
-        if      (valorPago <= 0)     aConfirmar++
-        else if (valorPago >= total) pagos++
-        else                         pendentes++
+        const statusVinculo = c.viagemStatus?.[v.id] ?? "a_confirmar"
+        if      (statusVinculo === "pago")     pagos++
+        else if (statusVinculo === "pendente") pendentes++
+        else                                   aConfirmar++
       }
       map[v.id] = {
         total:      vC.length,
@@ -506,16 +532,55 @@ export function Viagens() {
 
                 {isExpanded && expandMode === "passageiros" && linkedCli.length > 0 && (
                   <div className="flex flex-col gap-1.5 border-t pt-3">
-                    {linkedCli.map((c) => (
-                      <div
-                        key={c.id}
-                        className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-sm cursor-pointer hover:bg-muted transition-colors"
-                        onClick={() => openFichaCliente(c.id)}
-                      >
-                        <span className="font-medium text-card-foreground">{c.nomeCompleto}</span>
-                        <StatusBadge status={c.status} />
-                      </div>
-                    ))}
+                    {linkedCli.map((c) => {
+                      const statusVinculo = c.viagemStatus?.[v.id] ?? "a_confirmar"
+                      const statusKey = `${v.id}:${c.id}`
+                      return (
+                        <div
+                          key={c.id}
+                          className="flex items-center justify-between gap-2 rounded-md bg-muted/50 px-3 py-2 text-sm hover:bg-muted transition-colors"
+                        >
+                          <button
+                            type="button"
+                            className="min-w-0 flex-1 bg-transparent p-0 text-left font-medium text-card-foreground hover:underline"
+                            onClick={() => openFichaCliente(c.id)}
+                          >
+                            <span className="block truncate">{c.nomeCompleto}</span>
+                          </button>
+                          <select
+                            value={statusVinculo}
+                            disabled={statusLoading === statusKey}
+                            onChange={async (e) => {
+                              setStatusLoading(statusKey)
+                              try {
+                                await updateStatusClienteViagem(
+                                  c.id,
+                                  v.id,
+                                  e.target.value as "pago" | "pendente" | "a_confirmar"
+                                )
+                                toast.success("Status atualizado")
+                              } catch {
+                                toast.error("Erro ao atualizar status")
+                              } finally {
+                                setStatusLoading(null)
+                              }
+                            }}
+                            className={[
+                              "shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold border-0 outline-none cursor-pointer",
+                              statusVinculo === "pago"
+                                ? "bg-emerald-100 text-emerald-800"
+                                : statusVinculo === "pendente"
+                                  ? "bg-amber-100 text-amber-800"
+                                  : "bg-slate-100 text-slate-600",
+                            ].join(" ")}
+                          >
+                            <option value="a_confirmar">A confirmar</option>
+                            <option value="pendente">Pendente</option>
+                            <option value="pago">Pago</option>
+                          </select>
+                        </div>
+                      )
+                    })}
                   </div>
                 )}
 
@@ -524,6 +589,7 @@ export function Viagens() {
                     Nenhum passageiro ainda.
                   </p>
                 )}
+
                 {isExpanded && expandMode === "adicionar" && (
                   <AdicionarPassageiro viagem={v} passageirosAtuais={linkedCli} />
                 )}

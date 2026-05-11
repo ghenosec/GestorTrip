@@ -38,7 +38,7 @@ type SortDir   = "asc" | "desc"
 interface FormData {
   nomeCompleto: string; cpf: string; rg: string; dataNascimento: string
   telefone: string; email: string; endereco: string; observacoes: string
-  viagemIds: string[]   // ← múltiplas viagens
+  viagemIds: string[]
   status: "pago" | "pendente" | "a_confirmar"
 }
 
@@ -49,7 +49,7 @@ interface FormErrors {
 const emptyForm: FormData = {
   nomeCompleto: "", cpf: "", rg: "", dataNascimento: "",
   telefone: "", email: "", endereco: "", observacoes: "",
-  viagemIds: [], status: "a_confirmar",
+  viagemIds: [], status: "a_confirmar" as const,
 }
 
 export function Clientes() {
@@ -149,6 +149,7 @@ export function Clientes() {
       observacoes:    form.observacoes.trim(),
       viagemIds:      form.viagemIds,
       viagemId:       form.viagemIds[0] ?? null,
+      viagemStatus:   {},
       status:         form.status,
     }
 
@@ -242,6 +243,7 @@ export function Clientes() {
           <Plus className="mr-2 h-4 w-4" />Novo Cliente
         </Button>
       </div>
+
       <Card>
         <CardContent className="pt-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
@@ -279,6 +281,7 @@ export function Clientes() {
           </div>
         </CardContent>
       </Card>
+
       <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
@@ -331,11 +334,9 @@ export function Clientes() {
               </TableRow>
             ) : (
               clientesFiltrados.map((c) => {
-
                 const pags = pagamentos.filter((p) => p.clienteId === c.id)
                 const totalPago  = pags.reduce((s, p) => s + getValorPago(p), 0)
                 const totalGeral = pags.reduce((s, p) => s + p.valorTotal, 0)
-
                 const ids = c.viagemIds ?? (c.viagemId ? [c.viagemId] : [])
                 const viagensDoCliente = ids
                   .map((vid) => viagens.find((v) => v.id === vid))
@@ -354,6 +355,7 @@ export function Clientes() {
                     <TableCell className="hidden lg:table-cell text-muted-foreground">
                       {c.telefone ? formatPhone(c.telefone) : "—"}
                     </TableCell>
+
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       {viagensDoCliente.length === 0 ? (
                         <span className="text-muted-foreground text-sm">—</span>
@@ -372,8 +374,19 @@ export function Clientes() {
                         </div>
                       )}
                     </TableCell>
+
                     <TableCell>
-                      <StatusBadge status={c.status} />
+                      {(() => {
+                        const ids = c.viagemIds ?? (c.viagemId ? [c.viagemId] : [])
+                        if (ids.length === 0) return <StatusBadge status="a_confirmar" />
+                        const statuses = ids.map((vid) => c.viagemStatus?.[vid] ?? "a_confirmar")
+                        const status = statuses.every((s) => s === "pago")
+                          ? "pago"
+                          : statuses.some((s) => s === "pendente")
+                            ? "pendente"
+                            : "a_confirmar"
+                        return <StatusBadge status={status} />
+                      })()}
                     </TableCell>
                     <TableCell className="text-sm">
                       <span className="text-emerald-600 font-medium">
@@ -407,6 +420,7 @@ export function Clientes() {
           </TableBody>
         </Table>
       </div>
+
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -415,6 +429,7 @@ export function Clientes() {
               Campos com * são obrigatórios.
             </DialogDescription>
           </DialogHeader>
+
           <div className="grid gap-4 py-2">
             <div className="grid gap-2">
               <Label htmlFor="cnome">Nome completo *</Label>
@@ -429,6 +444,7 @@ export function Clientes() {
                 <p className="text-xs text-destructive">{errors.nomeCompleto}</p>
               )}
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="ccpf">CPF</Label>
@@ -451,6 +467,7 @@ export function Clientes() {
                 />
               </div>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="cnasc">Data de nascimento</Label>
@@ -476,6 +493,7 @@ export function Clientes() {
                 )}
               </div>
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="cemail">E-mail</Label>
               <Input
@@ -486,6 +504,7 @@ export function Clientes() {
                 placeholder="email@exemplo.com"
               />
             </div>
+
             <div className="grid gap-2">
               <Label htmlFor="cend">Endereço</Label>
               <Input
@@ -495,6 +514,7 @@ export function Clientes() {
                 placeholder="Rua, número, bairro"
               />
             </div>
+
             <div className="grid gap-2">
               <Label>Viagens</Label>
               {viagens.length === 0 ? (
@@ -533,24 +553,7 @@ export function Clientes() {
                 </p>
               )}
             </div>
-            <div className="grid gap-2">
-              <Label>Status de pagamento</Label>
-              <Select
-                value={form.status}
-                onValueChange={(v) =>
-                  setForm((p) => ({ ...p, status: v as FormData["status"] }))
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="a_confirmar">A confirmar</SelectItem>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="pago">Pago</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+
             <div className="grid gap-2">
               <Label htmlFor="cobs">Observações</Label>
               <Input
@@ -561,12 +564,14 @@ export function Clientes() {
               />
             </div>
           </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
             <Button onClick={handleSave}>{editingId ? "Salvar" : "Cadastrar"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       <AlertDialog open={cpfDuplicadoId !== null} onOpenChange={(o) => !o && setCpfDuplicadoId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -598,6 +603,7 @@ export function Clientes() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
       <AlertDialog open={deleteId !== null} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
