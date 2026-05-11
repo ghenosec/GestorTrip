@@ -1,6 +1,6 @@
 {
   "name": "gestortrip",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "license_api_url": "https://gestortrip-licenses.gestortrip.workers.dev/activate",
   "private": true,
   "description": "Sistema de gestão de viagens",
