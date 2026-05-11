@@ -48,6 +48,8 @@ declare global {
       updateCliente: (id: number, userId: number, data: Record<string, unknown>) => Promise<{ success: boolean }>
       deleteCliente: (id: number, userId: number) => Promise<{ success: boolean }>
 
+      updateStatusClienteViagem: (clienteId: number, viagemId: number, userId: number, status: string) => Promise<{ success: boolean }>
+
       addClienteToViagem:    (clienteId: number, viagemId: number, userId: number) => Promise<{ success: boolean; error?: string }>
       removeClienteFromViagem: (clienteId: number, viagemId: number, userId: number) => Promise<{ success: boolean; error?: string }>
 

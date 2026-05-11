@@ -10,6 +10,7 @@ export interface Cliente {
   observacoes: string
   viagemIds: string[]
   viagemId: string | null
+  viagemStatus: Record<string, "pago" | "pendente" | "a_confirmar">
   status: "pago" | "pendente" | "a_confirmar"
 }
 
